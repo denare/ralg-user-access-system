@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { lgasByRegion, regions, type Region } from "@/lib/constants";
 
 export const requestSchema = z.object({
   region: z.string().min(2).max(80),
@@ -24,6 +25,16 @@ export const requestSchema = z.object({
   reason: z.string().min(10).max(2000),
   systems: z.array(z.string().min(1).max(80)).min(1).max(30),
   mode: z.enum(["draft", "submit"]).default("submit")
+}).superRefine((data, context) => {
+  if (!regions.includes(data.region as Region)) {
+    context.addIssue({ code: "custom", path: ["region"], message: "Select a valid region." });
+    return;
+  }
+
+  const validLgas = lgasByRegion[data.region as Region] as readonly string[];
+  if (!validLgas.includes(data.lga)) {
+    context.addIssue({ code: "custom", path: ["lga"], message: "Select an LGA that belongs to the selected region." });
+  }
 });
 
 export const applicantSignupSchema = z.object({

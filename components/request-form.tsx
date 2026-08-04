@@ -2,7 +2,7 @@
 
 import { FormEvent, ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
-import { regions } from "@/lib/constants";
+import { lgasByRegion, regions, type Region } from "@/lib/constants";
 
 const actionOptions = ["Create User", "Modify User", "Block User", "Reset Password"] as const;
 const environmentOptions = ["Production", "Testing"] as const;
@@ -56,6 +56,7 @@ export function RequestForm({ profile, systems }: { profile: ApplicantProfile; s
   }
 
   const requiresTargetUser = form.action === "Modify User" || form.action === "Block User";
+  const availableLgas = lgasByRegion[form.region as Region] ?? [];
 
   async function saveRequest(mode: "draft" | "submit") {
     setSaving(true);
@@ -67,8 +68,24 @@ export function RequestForm({ profile, systems }: { profile: ApplicantProfile; s
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, systems: selectedSystems, mode })
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error ?? "The request could not be saved.");
+      const responseText = await response.text();
+      let result: { id?: string; error?: string } = {};
+
+      if (responseText) {
+        try {
+          result = JSON.parse(responseText) as { id?: string; error?: string };
+        } catch {
+          result = {};
+        }
+      }
+
+      if (!response.ok) {
+        const fallback = response.status === 503
+          ? "The request service is temporarily unavailable. Please try again shortly."
+          : "The request could not be saved. Please try again or contact the ICT support office.";
+        throw new Error(result.error ?? fallback);
+      }
+      if (!result.id) throw new Error("The server did not confirm the request reference. Please try again.");
 
       router.push(`/requests/${result.id}`);
       router.refresh();
@@ -90,7 +107,7 @@ export function RequestForm({ profile, systems }: { profile: ApplicantProfile; s
           <Field label="Region">
             <select
               value={form.region}
-              onChange={(event) => setForm({ ...form, region: event.target.value })}
+              onChange={(event) => setForm({ ...form, region: event.target.value, lga: "" })}
               className="field"
             >
               {regions.map((region) => (
@@ -99,12 +116,15 @@ export function RequestForm({ profile, systems }: { profile: ApplicantProfile; s
             </select>
           </Field>
           <Field label="LGA">
-            <input
+            <select
               className="field"
               value={form.lga}
               onChange={(event) => setForm({ ...form, lga: event.target.value })}
-              placeholder="Kibaha TC"
-            />
+              required
+            >
+              <option value="">Select LGA</option>
+              {availableLgas.map((lga) => <option key={lga} value={lga}>{lga}</option>)}
+            </select>
           </Field>
           <Field label="Facility">
             <input
