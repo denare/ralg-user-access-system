@@ -3,7 +3,8 @@ import type { Route } from "next";
 import { CircleHelp, Mail, Phone, ShieldCheck, UserPlus } from "lucide-react";
 import { LoginForm } from "@/components/login-form";
 
-export default function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ password?: string; error?: string }> }) {
+  const params = await searchParams;
   return (
     <main className="min-h-screen bg-slate-100">
       <div className="h-2 bg-[linear-gradient(90deg,#1eb4e9_0_25%,#000_25%_37.5%,#fcd116_37.5%_62.5%,#000_62.5%_75%,#006b3f_75%)]" />
@@ -54,6 +55,8 @@ export default function LoginPage() {
               Enter the credentials issued by your system administrator.
             </p>
           </div>
+          {params.password === "updated" ? <p className="mt-5 border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-800">Your password was updated successfully. Sign in with the new password.</p> : null}
+          {params.error === "invalid-link" ? <p className="mt-5 border border-red-300 bg-red-50 p-3 text-sm text-red-800">The confirmation or recovery link is invalid or has expired. Request a new link and try again.</p> : null}
           <LoginForm />
 
           <div className="mt-6 border border-emerald-200 bg-emerald-50 p-4">

@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getVisibleRequests } from "@/lib/data";
 import { requestSchema } from "@/lib/validation";
+import { isDatabaseUnavailable, withDatabaseRetry } from "@/lib/database-retry";
 
 const actions: Record<string, RequestAction> = {
   "Create User": "CREATE_USER",
@@ -41,6 +42,20 @@ export async function POST(request: Request) {
   const needsTarget = data.action === "Modify User" || data.action === "Block User";
   if (needsTarget && (!data.targetCheckNumber || !data.targetFullName)) {
     return NextResponse.json({ error: "Target user details are required for this action." }, { status: 400 });
+  }
+
+  let configuredSystems: { name: string }[];
+  try {
+    configuredSystems = await withDatabaseRetry(() => prisma.systemCatalog.findMany({
+      where: { name: { in: data.systems }, isActive: true },
+      select: { name: true }
+    }));
+  } catch (databaseError) {
+    if (!isDatabaseUnavailable(databaseError)) throw databaseError;
+    return NextResponse.json({ error: "The request service is temporarily unavailable. Please try again shortly." }, { status: 503 });
+  }
+  if (configuredSystems.length !== new Set(data.systems).size) {
+    return NextResponse.json({ error: "Select only active systems from the official system catalogue." }, { status: 400 });
   }
 
   const created = await prisma.accessRequest.create({

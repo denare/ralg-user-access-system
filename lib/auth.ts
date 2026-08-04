@@ -2,6 +2,7 @@ import { UserRole } from "@prisma/client";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { withDatabaseRetry } from "@/lib/database-retry";
 import { createClient } from "@/lib/supabase/server";
 
 export const getCurrentProfile = cache(async () => {
@@ -16,7 +17,7 @@ export const getCurrentProfile = cache(async () => {
     return null;
   }
 
-  return prisma.user.findUnique({ where: { authUserId: data.user.id } });
+  return withDatabaseRetry(() => prisma.user.findUnique({ where: { authUserId: data.user.id } }));
 });
 
 export async function requireProfile(roles?: UserRole[]) {
