@@ -10,17 +10,32 @@ export async function POST(request: Request) {
   if (current.user) return NextResponse.json({ error: "Sign out before creating another account." }, { status: 409 });
 
   const parsed = applicantSignupSchema.safeParse(await request.json());
-  if (!parsed.success) return NextResponse.json({ error: "Provide complete and valid applicant information." }, { status: 400 });
+  if (!parsed.success) {
+    return NextResponse.json({
+      error: "Please correct the fields marked below.",
+      fieldErrors: parsed.error.flatten().fieldErrors
+    }, { status: 400 });
+  }
   const data = parsed.data;
-  const existing = await prisma.user.findFirst({ where: { OR: [{ email: data.email }, { username: data.username }] } });
-  if (existing) return NextResponse.json({ error: "An account already exists for this email or username." }, { status: 409 });
+  const existing = await prisma.user.findFirst({
+    where: { OR: [{ email: data.email }, { username: data.username }] },
+    select: { email: true, username: true }
+  });
+  if (existing) {
+    const fieldErrors = existing.email === data.email
+      ? { email: ["An account already exists for this email address. Sign in instead."] }
+      : { username: ["This username is already in use. Choose a different username."] };
+    return NextResponse.json({ error: "An account with these details already exists.", fieldErrors }, { status: 409 });
+  }
 
   const { data: authData, error } = await supabase.auth.signUp({
     email: data.email, password: data.password,
     options: { data: { full_name: data.fullName, role: "APPLICANT" } }
   });
   if (error || !authData.user || authData.user.identities?.length === 0) {
-    return NextResponse.json({ error: error?.message ?? "This email address is already registered." }, { status: 400 });
+    const authMessage = error?.message ?? "This email address is already registered.";
+    const field = authMessage.toLowerCase().includes("password") ? "password" : "email";
+    return NextResponse.json({ error: "The account could not be registered.", fieldErrors: { [field]: [authMessage] } }, { status: 400 });
   }
 
   try {

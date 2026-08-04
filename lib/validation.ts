@@ -27,12 +27,20 @@ export const requestSchema = z.object({
 });
 
 export const applicantSignupSchema = z.object({
-  fullName: z.string().trim().min(3).max(160),
-  email: z.string().trim().toLowerCase().email(),
-  username: z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{3,40}$/),
-  password: z.string().min(8).max(72).regex(/[A-Z]/).regex(/[a-z]/).regex(/[0-9]/),
-  phone: z.string().trim().min(7).max(30),
-  department: z.string().trim().min(2).max(120),
-  designation: z.string().trim().min(2).max(120),
-  region: z.string().trim().min(2).max(80)
+  fullName: z.string().trim().min(3, "Enter the applicant's full name (at least 3 characters).").max(160, "Full name must not exceed 160 characters."),
+  email: z.string().trim().toLowerCase().email("Enter a valid email address, for example name@organization.go.tz."),
+  username: z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{3,40}$/, "Use 3-40 letters, numbers, dots, underscores, or hyphens only."),
+  password: z.string()
+    .min(8, "Password must contain at least 8 characters.")
+    .max(72, "Password must not exceed 72 characters.")
+    .regex(/[A-Z]/, "Password must include at least one uppercase letter.")
+    .regex(/[a-z]/, "Password must include at least one lowercase letter.")
+    .regex(/[0-9]/, "Password must include at least one number."),
+  phone: z.string().trim()
+    .min(7, "Enter a valid phone number with at least 7 digits.")
+    .max(30, "Phone number must not exceed 30 characters.")
+    .regex(/^\+?[0-9][0-9\s-]*$/, "Phone number may contain digits, spaces, hyphens, and an optional leading +."),
+  department: z.string().trim().min(2, "Select the applicant's department.").max(120, "Department name is too long."),
+  designation: z.string().trim().min(2, "Enter the applicant's official designation.").max(120, "Designation must not exceed 120 characters."),
+  region: z.string().trim().min(2, "Select the applicant's region.").max(80, "Region name is too long.")
 });
