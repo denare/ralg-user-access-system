@@ -16,6 +16,7 @@ The technical deployment is not, by itself, authorization to process real person
 - [ ] A real institutional System Administrator account has been created and tested.
 - [ ] HOD and ICT roles are assigned only from written authorization.
 - [ ] Supabase email confirmation and approved Site URL/redirect URLs are configured.
+- [ ] Custom SMTP is enabled in Supabase Authentication > Emails > SMTP Settings and password recovery delivery is verified outside the Supabase project team.
 - [ ] MFA policy for HOD, ICT, and Administrator accounts has been approved or implemented.
 - [ ] Supabase service-role key and database password have been rotated after handover.
 - [ ] Production secrets exist only in Vercel/Supabase secret stores, not source control.
