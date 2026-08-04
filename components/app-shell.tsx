@@ -45,7 +45,7 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
   const pathname = usePathname();
   const router = useRouter();
 
-  if (pathname === "/login" || pathname === "/signup") {
+  if (["/login", "/signup", "/forgot-password", "/update-password", "/privacy"].includes(pathname)) {
     return <>{children}</>;
   }
 

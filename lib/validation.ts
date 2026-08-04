@@ -42,5 +42,6 @@ export const applicantSignupSchema = z.object({
     .regex(/^\+?[0-9][0-9\s-]*$/, "Phone number may contain digits, spaces, hyphens, and an optional leading +."),
   department: z.string().trim().min(2, "Select the applicant's department.").max(120, "Department name is too long."),
   designation: z.string().trim().min(2, "Enter the applicant's official designation.").max(120, "Designation must not exceed 120 characters."),
-  region: z.string().trim().min(2, "Select the applicant's region.").max(80, "Region name is too long.")
+  region: z.string().trim().min(2, "Select the applicant's region.").max(80, "Region name is too long."),
+  acceptedUse: z.string().refine((value) => value === "on", "Confirm the declaration before creating an account.")
 });

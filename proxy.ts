@@ -2,6 +2,10 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname === "/api/health") {
+    return NextResponse.next();
+  }
+
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     return NextResponse.next();
   }
@@ -23,10 +27,12 @@ export async function proxy(request: NextRequest) {
   );
 
   const { data } = await supabase.auth.getUser();
-  const isAuthPage = request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/signup";
+  const isAuthPage = ["/login", "/signup", "/forgot-password"].includes(request.nextUrl.pathname);
+  const isPublicPage = isAuthPage || request.nextUrl.pathname === "/privacy";
   const isSignupApi = request.nextUrl.pathname === "/api/signup";
+  const isAuthCallback = request.nextUrl.pathname === "/auth/callback";
 
-  if (!data.user && !isAuthPage && !isSignupApi) {
+  if (!data.user && !isPublicPage && !isSignupApi && !isAuthCallback) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

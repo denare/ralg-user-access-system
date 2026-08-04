@@ -3,6 +3,8 @@
 import { FormEvent, useState } from "react";
 import { Eye, EyeOff, Loader2, LockKeyhole, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import type { Route } from "next";
 import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm() {
@@ -64,9 +66,9 @@ export function LoginForm() {
           <label htmlFor="password" className="block text-sm font-semibold text-slate-800">
             Password
           </label>
-          <button type="button" className="text-xs font-semibold text-brand-government hover:underline">
+          <Link href={"/forgot-password" as Route} className="text-xs font-semibold text-brand-government hover:underline">
             Forgot password?
-          </button>
+          </Link>
         </div>
         <div className="relative">
           <LockKeyhole className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />

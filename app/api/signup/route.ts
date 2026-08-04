@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 import { applicantSignupSchema } from "@/lib/validation";
+import { isDatabaseUnavailable, withDatabaseRetry } from "@/lib/database-retry";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -17,20 +18,39 @@ export async function POST(request: Request) {
     }, { status: 400 });
   }
   const data = parsed.data;
-  const existing = await prisma.user.findFirst({
-    where: { OR: [{ email: data.email }, { username: data.username }] },
-    select: { email: true, username: true }
-  });
+  let existing: { email: string; username: string } | null;
+  let departmentExists: { id: string } | null;
+  try {
+    [existing, departmentExists] = await withDatabaseRetry(() => prisma.$transaction([
+      prisma.user.findFirst({
+        where: { OR: [{ email: data.email }, { username: data.username }] },
+        select: { email: true, username: true }
+      }),
+      prisma.department.findFirst({ where: { name: data.department, isActive: true }, select: { id: true } })
+    ]));
+  } catch (databaseError) {
+    if (!isDatabaseUnavailable(databaseError)) throw databaseError;
+    return NextResponse.json({ error: "Registration is temporarily unavailable. Please try again shortly." }, { status: 503 });
+  }
   if (existing) {
     const fieldErrors = existing.email === data.email
       ? { email: ["An account already exists for this email address. Sign in instead."] }
       : { username: ["This username is already in use. Choose a different username."] };
     return NextResponse.json({ error: "An account with these details already exists.", fieldErrors }, { status: 409 });
   }
+  if (!departmentExists) {
+    return NextResponse.json({
+      error: "Please correct the fields marked below.",
+      fieldErrors: { department: ["Select an active department from the official register."] }
+    }, { status: 400 });
+  }
 
   const { data: authData, error } = await supabase.auth.signUp({
     email: data.email, password: data.password,
-    options: { data: { full_name: data.fullName, role: "APPLICANT" } }
+    options: {
+      data: { full_name: data.fullName, role: "APPLICANT" },
+      emailRedirectTo: `${new URL(request.url).origin}/auth/callback?next=/dashboard`
+    }
   });
   if (error || !authData.user || authData.user.identities?.length === 0) {
     const authMessage = error?.message ?? "This email address is already registered.";
@@ -45,7 +65,7 @@ export async function POST(request: Request) {
         username: data.username, phone: data.phone, department: data.department,
         designation: data.designation, region: data.region, role: "APPLICANT"
       } });
-      await tx.auditLog.create({ data: { actorId: user.id, action: "APPLICANT_REGISTERED", entityType: "User", entityId: user.id } });
+      await tx.auditLog.create({ data: { actorId: user.id, action: "APPLICANT_REGISTERED", entityType: "User", entityId: user.id, details: { declarationAccepted: true, noticeVersion: "2026-08-04" } } });
       return user;
     });
     return NextResponse.json({ id: profile.id, requiresEmailConfirmation: !authData.session }, { status: 201 });
@@ -55,7 +75,8 @@ export async function POST(request: Request) {
         { auth: { persistSession: false, autoRefreshToken: false } });
       await admin.auth.admin.deleteUser(authData.user.id);
     }
-    console.error("Applicant profile creation failed", profileError);
-    return NextResponse.json({ error: "The applicant account could not be created." }, { status: 500 });
+    console.error("Applicant profile creation failed", profileError instanceof Error ? profileError.name : "UnknownError");
+    const unavailable = isDatabaseUnavailable(profileError);
+    return NextResponse.json({ error: unavailable ? "Registration is temporarily unavailable. Please try again shortly." : "The applicant account could not be created." }, { status: unavailable ? 503 : 500 });
   }
 }

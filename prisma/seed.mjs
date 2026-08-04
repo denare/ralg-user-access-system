@@ -2,6 +2,10 @@ import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { createClient } from "@supabase/supabase-js";
 
+if (process.env.ALLOW_DEMO_SEED !== "true") {
+  throw new Error("Demonstration seeding is disabled. Set ALLOW_DEMO_SEED=true only for an approved non-production demonstration environment.");
+}
+
 const prisma = new PrismaClient();
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -11,10 +15,10 @@ const supabase = createClient(
 
 // Development-only credentials. Replace these accounts before operational deployment.
 const initialPasswords = {
-  applicant: "applicant@123",
-  hod: "hod@123",
-  ict: "ict@123",
-  admin: "admin@123"
+  applicant: process.env.SEED_APPLICANT_PASSWORD ?? process.env.SEED_EMPLOYEE_PASSWORD ?? "applicant@123",
+  hod: process.env.SEED_HOD_PASSWORD ?? "hod@123",
+  ict: process.env.SEED_ICT_PASSWORD ?? "ict@123",
+  admin: process.env.SEED_ADMIN_PASSWORD ?? "admin@123"
 };
 
 const accounts = [
