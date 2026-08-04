@@ -1,14 +1,19 @@
 import { PageHeader } from "@/components/page-header";
 import { RequestTable } from "@/components/request-table";
-import { requests } from "@/lib/mock-data";
+import { requireProfile } from "@/lib/auth";
+import { getVisibleRequests } from "@/lib/data";
 
-export default function RequestsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function RequestsPage() {
+  const profile = await requireProfile();
+  const requests = await getVisibleRequests(profile);
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="Request Register"
-        title="All access requests in one searchable register"
-        description="In the production version, this page should support filtering by status, region, action type, department, requested system, and date range."
+        title="User Access Request Register"
+        description="Official register of submitted requests, their responsible officers, current status, and recorded processing dates."
       />
       <RequestTable items={requests} />
     </div>

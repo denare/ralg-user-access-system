@@ -1,37 +1,54 @@
-# User Access Workflow System
+# Government User Access Management System
 
-This project is a Next.js prototype for digitizing the paper-based User Access Request Form into a workflow management system.
+Next.js workflow system for submitting, authorizing, provisioning, and auditing government information-system access requests.
 
-## Stack
+## Technology
 
-- Next.js App Router
-- TypeScript
-- Tailwind CSS
-- Prisma
-- PostgreSQL
+- Next.js 16, React 19, TypeScript, and Tailwind CSS
+- Supabase Auth for user identities and sessions
+- Supabase PostgreSQL for hosted application data
+- Prisma ORM for database access and migrations
+- Zod for server-side request validation
 
-## What is included
+## Roles
 
-- Dashboard with workflow and reporting overview
-- Online user access request form based on the paper form
-- Request register with status tracking
-- Approval workspace for HOD and ICT review
-- Prisma schema for users, requests, systems, and approvals
-- Sample data to demonstrate the workflow before backend wiring
+- `EMPLOYEE`: submits requests and views personal request history
+- `HOD`: reviews requests from the assigned department
+- `ICT_OFFICER`: processes requests approved by a Head of Department
+- `ADMIN`: manages accounts and reviews organization-wide reports
 
-## Suggested next implementation steps
+All role permissions are checked on the server. Prisma-managed tables have RLS enabled and are not accessible through the public Supabase REST API.
 
-1. Install dependencies with `npm install`.
-2. Copy `.env.example` to `.env` and set `DATABASE_URL`.
-3. Run `npx prisma generate`.
-4. Add Auth.js for login and role-based route protection.
-5. Replace mock data with Prisma queries and route handlers.
-6. Add validation with Zod and React Hook Form.
-7. Add notifications, PDF export, and audit logs.
+## Local Configuration
 
-## Core workflow
+The private `.env` file contains the linked Supabase connection details and is excluded from Git. Use `.env.example` when configuring another environment.
 
-1. Employee submits access request.
-2. Head of Department approves or rejects.
-3. ICT Officer approves, provisions access, and completes the request.
-4. Administrator monitors reports and compliance.
+```bash
+npm install
+npx prisma generate
+npx prisma migrate deploy
+npm run db:seed
+npm run dev
+```
+
+Open `http://localhost:3000`. The development seed creates these accounts:
+
+```text
+Employee: employee.demo@tamisemi.go.tz / employee@123
+HOD:      hod.demo@tamisemi.go.tz      / hod@123
+ICT:      ict.demo@tamisemi.go.tz      / ict@123
+Admin:    admin.demo@tamisemi.go.tz    / admin@123
+```
+
+These credentials are for local demonstration only and must be replaced before operational use.
+
+## Database Commands
+
+```bash
+npx prisma studio
+npx prisma migrate dev --name descriptive_migration_name
+npm run db:seed
+node scripts/verify-accounts.mjs
+```
+
+The seed is repeatable: it upserts the four accounts and recreates only the three known demonstration requests.

@@ -10,15 +10,18 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          ink: "#12343b",
-          moss: "#2f6b57",
-          sand: "#f4ead7",
-          clay: "#bf7b30",
-          mist: "#e6f0ed"
+          ink: "#102a43",
+          government: "#006b3f",
+          moss: "#006b3f",
+          gold: "#fcd116",
+          sky: "#1eb4e9",
+          sand: "#f8fafc",
+          clay: "#9a6700",
+          mist: "#e8f5ee"
         }
       },
       boxShadow: {
-        card: "0 20px 60px rgba(18, 52, 59, 0.12)"
+        card: "0 1px 3px rgba(15, 23, 42, 0.10)"
       },
       backgroundImage: {
         mesh:
