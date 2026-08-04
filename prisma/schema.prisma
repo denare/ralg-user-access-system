@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  EMPLOYEE
+  HOD
+  ICT_OFFICER
+  ADMIN
+}
+
+enum RequestAction {
+  CREATE_USER
+  MODIFY_USER
+  BLOCK_USER
+  RESET_PASSWORD
+}
+
+enum OperatingEnvironment {
+  PRODUCTION
+  TESTING
+}
+
+enum RequestStatus {
+  DRAFT
+  PENDING_HOD
+  PENDING_ICT
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum Decision {
+  APPROVE
+  REJECT
+}
+
+model User {
+  id             String          @id @default(cuid())
+  fullName       String
+  email          String          @unique
+  username       String          @unique
+  passwordHash   String
+  phone          String?
+  department     String?
+  designation    String?
+  region         String?
+  role           UserRole
+  requests       AccessRequest[] @relation("Requester")
+  approvals      Approval[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model AccessRequest {
+  id                  String                 @id @default(cuid())
+  requestNumber       String                 @unique
+  applicantId         String
+  applicant           User                   @relation("Requester", fields: [applicantId], references: [id])
+  region              String
+  lga                 String
+  facility            String
+  action              RequestAction
+  environment         OperatingEnvironment
+  checkNumber         String
+  nin                 String
+  fullName            String
+  designation         String
+  department          String
+  phone               String
+  email               String
+  targetCheckNumber   String?
+  targetFullName      String?
+  targetDepartment    String?
+  targetEmail         String?
+  targetPhone         String?
+  targetDesignation   String?
+  systems             RequestSystem[]
+  requestedRole       String
+  otherSystem         String?
+  reason              String
+  status              RequestStatus
+  hodComment          String?
+  ictComment          String?
+  completedAt         DateTime?
+  approvals           Approval[]
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+}
+
+model RequestSystem {
+  id        String        @id @default(cuid())
+  requestId String
+  request   AccessRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  system    String
+}
+
+model Approval {
+  id          String        @id @default(cuid())
+  requestId   String
+  request     AccessRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  approverId  String
+  approver    User          @relation(fields: [approverId], references: [id])
+  approverRole UserRole
+  decision    Decision
+  comment     String?
+  decidedAt   DateTime      @default(now())
+}
