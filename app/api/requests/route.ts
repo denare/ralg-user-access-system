@@ -28,8 +28,8 @@ export async function GET() {
 export async function POST(request: Request) {
   const profile = await getCurrentProfile();
   if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (profile.role !== "EMPLOYEE") {
-    return NextResponse.json({ error: "Only employees may submit access requests." }, { status: 403 });
+  if (profile.role !== "APPLICANT") {
+    return NextResponse.json({ error: "Only applicants may submit access requests." }, { status: 403 });
   }
 
   const parsed = requestSchema.safeParse(await request.json());
@@ -47,18 +47,18 @@ export async function POST(request: Request) {
     data: {
       requestNumber: `UAR-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
       applicantId: profile.id,
-      region: data.region,
+      region: profile.region ?? data.region,
       lga: data.lga,
       facility: data.facility,
       action: actions[data.action],
       environment: environments[data.environment],
       checkNumber: data.checkNumber,
       nin: data.nin,
-      fullName: data.fullName,
-      designation: data.designation,
-      department: data.department,
-      phone: data.phone,
-      email: data.email,
+      fullName: profile.fullName,
+      designation: profile.designation ?? data.designation,
+      department: profile.department ?? data.department,
+      phone: profile.phone ?? data.phone,
+      email: profile.email,
       targetCheckNumber: needsTarget ? data.targetCheckNumber : null,
       targetFullName: needsTarget ? data.targetFullName : null,
       targetDesignation: needsTarget ? data.targetDesignation : null,
@@ -71,6 +71,10 @@ export async function POST(request: Request) {
       status: data.mode === "draft" ? "DRAFT" : "PENDING_HOD",
       systems: { create: data.systems.map((system) => ({ system })) }
     }
+  });
+
+  await prisma.auditLog.create({
+    data: { actorId: profile.id, action: data.mode === "draft" ? "REQUEST_DRAFTED" : "REQUEST_SUBMITTED", entityType: "AccessRequest", entityId: created.id }
   });
 
   return NextResponse.json({ id: created.id, requestNumber: created.requestNumber }, { status: 201 });

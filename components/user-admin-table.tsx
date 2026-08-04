@@ -9,12 +9,12 @@ type ManagedUser = {
   email: string;
   department: string;
   designation: string;
-  role: "EMPLOYEE" | "HOD" | "ICT_OFFICER" | "ADMIN";
+  role: "APPLICANT" | "HOD" | "ICT_OFFICER" | "ADMIN";
   isActive: boolean;
 };
 
 const roleLabels = {
-  EMPLOYEE: "Employee",
+  APPLICANT: "Employee (Applicant)",
   HOD: "Head of Department",
   ICT_OFFICER: "ICT Officer",
   ADMIN: "System Administrator"

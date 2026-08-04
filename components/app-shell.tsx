@@ -13,25 +13,29 @@ import {
   LogOut,
   ShieldCheck,
   UserRound,
-  Users
+  Users,
+  Settings,
+  ScrollText
 } from "lucide-react";
 import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["EMPLOYEE", "HOD", "ICT_OFFICER", "ADMIN"] },
-  { href: "/requests/new", label: "New Request", icon: FileText, roles: ["EMPLOYEE"] },
-  { href: "/requests", label: "Request Register", icon: ClipboardCheck, roles: ["EMPLOYEE", "HOD", "ICT_OFFICER", "ADMIN"] },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["APPLICANT", "HOD", "ICT_OFFICER", "ADMIN"] },
+  { href: "/requests/new", label: "New Request", icon: FileText, roles: ["APPLICANT"] },
+  { href: "/requests", label: "Request Register", icon: ClipboardCheck, roles: ["APPLICANT", "HOD", "ICT_OFFICER", "ADMIN"] },
   { href: "/approvals", label: "Approvals", icon: ShieldCheck, roles: ["HOD", "ICT_OFFICER"] },
   { href: "/users", label: "User Accounts", icon: Users, roles: ["ADMIN"] },
+  { href: "/configuration", label: "Configuration", icon: Settings, roles: ["ADMIN"] },
+  { href: "/audit", label: "Audit Log", icon: ScrollText, roles: ["ADMIN"] },
   { href: "/reports", label: "Reports", icon: FileBarChart2, roles: ["ADMIN"] }
 ] as const;
 
-type ShellProfile = { fullName: string; role: "EMPLOYEE" | "HOD" | "ICT_OFFICER" | "ADMIN" } | null;
+type ShellProfile = { fullName: string; role: "APPLICANT" | "HOD" | "ICT_OFFICER" | "ADMIN" } | null;
 
 const roleLabels = {
-  EMPLOYEE: "Employee",
+  APPLICANT: "Employee (Applicant)",
   HOD: "Head of Department",
   ICT_OFFICER: "ICT Officer",
   ADMIN: "System Administrator"
@@ -41,7 +45,7 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
   const pathname = usePathname();
   const router = useRouter();
 
-  if (pathname === "/login") {
+  if (pathname === "/login" || pathname === "/signup") {
     return <>{children}</>;
   }
 

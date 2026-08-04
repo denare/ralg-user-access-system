@@ -18,6 +18,12 @@ export function LoginForm() {
 
     const form = new FormData(event.currentTarget);
     const supabase = createClient();
+    const current = await supabase.auth.getUser();
+    if (current.data.user) {
+      setError("An account is already active on this device. Sign out before using another account.");
+      setSubmitting(false);
+      return;
+    }
     const result = await supabase.auth.signInWithPassword({
       email: String(form.get("email")),
       password: String(form.get("password"))

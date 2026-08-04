@@ -52,6 +52,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         ictComment: isIctStep ? parsed.data.comment : item.ictComment,
         completedAt: nextStatus === "COMPLETED" ? new Date() : null
       }
+    }),
+    prisma.auditLog.create({
+      data: { actorId: profile.id, action: approved ? (isIctStep ? "REQUEST_COMPLETED" : "REQUEST_APPROVED") : "REQUEST_REJECTED", entityType: "AccessRequest", entityId: item.id, details: { stage: profile.role } }
     })
   ]);
 

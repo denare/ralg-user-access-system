@@ -25,3 +25,14 @@ export const requestSchema = z.object({
   systems: z.array(z.string().min(1).max(80)).min(1).max(30),
   mode: z.enum(["draft", "submit"]).default("submit")
 });
+
+export const applicantSignupSchema = z.object({
+  fullName: z.string().trim().min(3).max(160),
+  email: z.string().trim().toLowerCase().email(),
+  username: z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{3,40}$/),
+  password: z.string().min(8).max(72).regex(/[A-Z]/).regex(/[a-z]/).regex(/[0-9]/),
+  phone: z.string().trim().min(7).max(30),
+  department: z.string().trim().min(2).max(120),
+  designation: z.string().trim().min(2).max(120),
+  region: z.string().trim().min(2).max(80)
+});

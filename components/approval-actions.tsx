@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function ApprovalActions({ requestId }: { requestId: string }) {
+export function ApprovalActions({ requestId, role }: { requestId: string; role: "HOD" | "ICT_OFFICER" }) {
   const router = useRouter();
   const [comment, setComment] = useState("");
   const [saving, setSaving] = useState(false);
@@ -44,7 +44,7 @@ export function ApprovalActions({ requestId }: { requestId: string }) {
           Reject
         </button>
         <button disabled={saving} onClick={() => void decide("approve")} className="rounded-sm bg-brand-government px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
-          {saving ? "Recording..." : "Approve"}
+          {saving ? "Recording..." : role === "ICT_OFFICER" ? "Approve and Mark Completed" : "Approve"}
         </button>
       </div>
       {error ? <p className="text-sm text-red-700">{error}</p> : null}

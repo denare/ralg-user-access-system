@@ -23,7 +23,7 @@ export default async function UsersPage() {
           email: user.email,
           department: user.department ?? "Not assigned",
           designation: user.designation ?? "Not assigned",
-          role: user.role,
+          role: user.role as "HOD" | "ICT_OFFICER" | "ADMIN" | "APPLICANT",
           isActive: user.isActive
         }))}
       />

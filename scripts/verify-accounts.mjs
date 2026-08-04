@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 const accounts = [
-  ["employee.demo@tamisemi.go.tz", "employee@123", "EMPLOYEE"],
+  ["applicant.demo@tamisemi.go.tz", "applicant@123", "APPLICANT"],
   ["hod.demo@tamisemi.go.tz", "hod@123", "HOD"],
   ["ict.demo@tamisemi.go.tz", "ict@123", "ICT_OFFICER"],
   ["admin.demo@tamisemi.go.tz", "admin@123", "ADMIN"]
@@ -22,13 +22,16 @@ for (const [email, password, expectedRole] of accounts) {
   await client.auth.signOut();
 }
 
-const [users, requests, systems, approvals] = await Promise.all([
+const [users, requests, systems, approvals, departments, configuredSystems] = await prisma.$transaction([
   prisma.user.count(),
   prisma.accessRequest.count(),
   prisma.requestSystem.count(),
-  prisma.approval.count()
+  prisma.approval.count(),
+  prisma.department.count(),
+  prisma.systemCatalog.count()
 ]);
 console.log(`Database records: ${users} users, ${requests} requests, ${systems} systems, ${approvals} approvals`);
+console.log(`Configuration records: ${departments} departments, ${configuredSystems} configured systems`);
 
 const anonymous = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
