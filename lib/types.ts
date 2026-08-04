@@ -1,4 +1,4 @@
-export type UserRole = "Employee" | "Head of Department" | "ICT Officer" | "Administrator";
+export type UserRole = "Employee (Applicant)" | "Head of Department" | "ICT Officer" | "Administrator";
 
 export type RequestAction =
   | "Create User"

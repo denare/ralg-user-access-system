@@ -9,7 +9,7 @@ datasource db {
 }
 
 enum UserRole {
-  EMPLOYEE
+  APPLICANT
   HOD
   ICT_OFFICER
   ADMIN
@@ -55,11 +55,45 @@ model User {
   isActive       Boolean         @default(true)
   requests       AccessRequest[] @relation("Requester")
   approvals      Approval[]
+  auditLogs      AuditLog[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
   @@index([role])
   @@index([department])
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  code      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SystemCatalog {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String
+  entityId   String?
+  details    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([entityType])
+  @@index([createdAt])
 }
 
 model AccessRequest {

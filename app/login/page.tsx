@@ -1,4 +1,6 @@
-import { CircleHelp, Mail, Phone, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import type { Route } from "next";
+import { CircleHelp, Mail, Phone, ShieldCheck, UserPlus } from "lucide-react";
 import { LoginForm } from "@/components/login-form";
 
 export default function LoginPage() {
@@ -32,7 +34,7 @@ export default function LoginPage() {
 
           <div className="mt-8 grid max-w-2xl gap-4 sm:grid-cols-3">
             {[
-              ["01", "Submit", "Employees submit complete access requests."],
+              ["01", "Submit", "Applicants submit complete access requests."],
               ["02", "Authorize", "Department heads record formal decisions."],
               ["03", "Process", "ICT officers provision and close requests."]
             ].map(([number, title, description]) => (
@@ -53,6 +55,14 @@ export default function LoginPage() {
             </p>
           </div>
           <LoginForm />
+
+          <div className="mt-6 border border-emerald-200 bg-emerald-50 p-4">
+            <p className="text-sm font-semibold text-brand-ink">Are you an applicant?</p>
+            <p className="mt-1 text-xs leading-5 text-slate-600">Create an Employee (Applicant) account to submit and track access requests.</p>
+            <Link href={"/signup" as Route} className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-brand-government hover:underline">
+              <UserPlus className="h-4 w-4" /> Create Applicant Account
+            </Link>
+          </div>
 
           <div className="mt-6 border-t border-slate-200 pt-5">
             <div className="flex items-start gap-3">

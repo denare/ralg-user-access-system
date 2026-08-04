@@ -46,7 +46,7 @@ export default async function ApprovalsPage() {
                   Submitted {formatDate(request.createdAt)} | Department: {request.department}
                 </p>
               </div>
-              <ApprovalActions requestId={request.id} />
+              <ApprovalActions requestId={request.id} role={profile.role as "HOD" | "ICT_OFFICER"} />
             </div>
           </article>
         ))}

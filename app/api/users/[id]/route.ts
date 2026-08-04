@@ -4,7 +4,7 @@ import { getCurrentProfile } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 const updateSchema = z.object({
-  role: z.enum(["EMPLOYEE", "HOD", "ICT_OFFICER", "ADMIN"]).optional(),
+  role: z.enum(["APPLICANT", "HOD", "ICT_OFFICER", "ADMIN"]).optional(),
   isActive: z.boolean().optional()
 }).refine((value) => value.role !== undefined || value.isActive !== undefined);
 
@@ -22,6 +22,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "You cannot deactivate your own administrator account." }, { status: 409 });
   }
 
-  const user = await prisma.user.update({ where: { id }, data: parsed.data });
+  const [user] = await prisma.$transaction([
+    prisma.user.update({ where: { id }, data: parsed.data }),
+    prisma.auditLog.create({ data: { actorId: administrator.id, action: "USER_ACCOUNT_UPDATED", entityType: "User", entityId: id, details: parsed.data } })
+  ]);
   return NextResponse.json({ id: user.id, role: user.role, isActive: user.isActive });
 }

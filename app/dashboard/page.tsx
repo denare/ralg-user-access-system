@@ -22,7 +22,7 @@ export default async function DashboardPage() {
         eyebrow="Administrative Dashboard"
         title="User Access Request Management"
         description="Monitor access requests, departmental approvals, ICT processing, and service-delivery performance from one controlled workspace."
-        action={profile.role === "EMPLOYEE" ? (
+        action={profile.role === "APPLICANT" ? (
           <Link
             href="/requests/new"
             className="inline-flex items-center gap-2 rounded-sm bg-brand-government px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800"
@@ -39,7 +39,7 @@ export default async function DashboardPage() {
         ))}
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+      <section className={profile.role === "ADMIN" ? "grid gap-6 xl:grid-cols-[1.35fr_0.65fr]" : "grid gap-6"}>
         <div className="border border-slate-200 bg-white p-6 shadow-card">
           <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
             <div>
@@ -57,8 +57,8 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="space-y-6">
-          {reportCards.length ? <section className="border border-slate-200 bg-white p-6 shadow-card">
+        {profile.role === "ADMIN" ? <div className="space-y-6">
+          <section className="border border-slate-200 bg-white p-6 shadow-card">
             <h3 className="border-b border-slate-200 pb-3 text-lg font-bold text-brand-ink">Control Objectives</h3>
             <div className="mt-4 space-y-4">
               <ControlItem
@@ -77,7 +77,7 @@ export default async function DashboardPage() {
                 description="Authorized officers can review demand and performance by administrative unit and system."
               />
             </div>
-          </section> : null}
+          </section>
 
           <section className="border border-slate-200 bg-white p-6 shadow-card">
             <h3 className="border-b border-slate-200 pb-3 text-lg font-bold text-brand-ink">Monthly Summary</h3>
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
               ))}
             </div>
           </section>
-        </div>
+        </div> : null}
       </section>
     </div>
   );

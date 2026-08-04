@@ -2,7 +2,7 @@
 
 import { FormEvent, ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
-import { regions, systemsCatalog } from "@/lib/constants";
+import { regions } from "@/lib/constants";
 
 const actionOptions = ["Create User", "Modify User", "Block User", "Reset Password"] as const;
 const environmentOptions = ["Production", "Testing"] as const;
@@ -31,10 +31,21 @@ const initialState = {
   reason: ""
 };
 
-export function RequestForm() {
+type ApplicantProfile = {
+  fullName: string;
+  email: string;
+  phone: string | null;
+  department: string | null;
+  designation: string | null;
+  region: string | null;
+};
+
+export function RequestForm({ profile, systems }: { profile: ApplicantProfile; systems: string[] }) {
   const router = useRouter();
-  const [selectedSystems, setSelectedSystems] = useState<string[]>(["LGRCIS"]);
-  const [form, setForm] = useState(initialState);
+  const [selectedSystems, setSelectedSystems] = useState<string[]>(systems.slice(0, 1));
+  const [form, setForm] = useState({ ...initialState, region: profile.region ?? initialState.region,
+    fullName: profile.fullName, email: profile.email, phone: profile.phone ?? "",
+    department: profile.department ?? "", designation: profile.designation ?? "" });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -155,19 +166,19 @@ export function RequestForm() {
             <input className="field" value={form.nin} onChange={(e) => setForm({ ...form, nin: e.target.value })} />
           </Field>
           <Field label="Full Name">
-            <input className="field" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
+            <input className="field bg-slate-100" value={form.fullName} readOnly />
           </Field>
           <Field label="Designation">
-            <input className="field" value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })} />
+            <input className="field bg-slate-100" value={form.designation} readOnly />
           </Field>
           <Field label="Department">
-            <input className="field" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+            <input className="field bg-slate-100" value={form.department} readOnly />
           </Field>
           <Field label="Phone Number">
-            <input className="field" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <input className="field bg-slate-100" value={form.phone} readOnly />
           </Field>
           <Field label="Email Address" className="md:col-span-2">
-            <input className="field" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <input className="field bg-slate-100" value={form.email} readOnly />
           </Field>
         </div>
 
@@ -230,7 +241,7 @@ export function RequestForm() {
         />
 
         <div className="grid gap-3 md:grid-cols-3">
-          {systemsCatalog.map((system) => (
+          {systems.map((system) => (
             <label key={system} className="choice-card">
               <input
                 type="checkbox"

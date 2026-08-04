@@ -11,7 +11,7 @@ const supabase = createClient(
 
 // Development-only credentials. Replace these accounts before operational deployment.
 const initialPasswords = {
-  employee: "employee@123",
+  applicant: "applicant@123",
   hod: "hod@123",
   ict: "ict@123",
   admin: "admin@123"
@@ -19,12 +19,13 @@ const initialPasswords = {
 
 const accounts = [
   {
-    key: "employee",
-    email: "employee.demo@tamisemi.go.tz",
-    username: "employee.demo",
-    password: initialPasswords.employee,
+    key: "applicant",
+    email: "applicant.demo@tamisemi.go.tz",
+    legacyEmail: "employee.demo@tamisemi.go.tz",
+    username: "applicant.demo",
+    password: initialPasswords.applicant,
     fullName: "Amina Msuya",
-    role: "EMPLOYEE",
+    role: "APPLICANT",
     department: "Planning",
     designation: "Planning Officer",
     phone: "0712000001",
@@ -71,11 +72,12 @@ const accounts = [
 async function ensureAuthUser(account) {
   const { data: listed, error: listError } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
   if (listError) throw listError;
-  const existing = listed.users.find((user) => user.email === account.email);
+  const existing = listed.users.find((user) => user.email === account.email || user.email === account.legacyEmail);
 
   if (existing) {
     const { data, error } = await supabase.auth.admin.updateUserById(existing.id, {
       password: account.password,
+      email: account.email,
       email_confirm: true,
       user_metadata: { full_name: account.fullName, role: account.role }
     });
@@ -96,10 +98,22 @@ async function ensureAuthUser(account) {
 async function main() {
   const profiles = {};
 
+  for (const department of [
+    ["Planning", "PLN"], ["Finance and Accounts", "FIN"],
+    ["Human Resources and Administration", "HRA"],
+    ["Information and Communication Technology", "ICT"]
+  ]) {
+    await prisma.department.upsert({ where: { code: department[1] }, update: { name: department[0], isActive: true }, create: { name: department[0], code: department[1] } });
+  }
+
+  for (const name of ["FFARS", "eOffice", "LGRCIS", "PLANREP", "MUSE", "IMES", "LAAMP", "GOVHOMIS", "GMS", "MADENI MIS", "NeST", "JETMIS", "eBOARD", "TAUSI", "PREMS", "VPN", "Domain"]) {
+    await prisma.systemCatalog.upsert({ where: { name }, update: { isActive: true }, create: { name } });
+  }
+
   for (const account of accounts) {
     const authUser = await ensureAuthUser(account);
     profiles[account.key] = await prisma.user.upsert({
-      where: { email: account.email },
+      where: { authUserId: authUser.id },
       update: {
         authUserId: authUser.id,
         username: account.username,
@@ -132,7 +146,7 @@ async function main() {
   await prisma.accessRequest.create({
     data: {
       requestNumber: "UAR-2026-0001",
-      applicantId: profiles.employee.id,
+      applicantId: profiles.applicant.id,
       region: "Dodoma",
       lga: "Dodoma City Council",
       facility: "Regional Secretariat",
@@ -140,11 +154,11 @@ async function main() {
       environment: "PRODUCTION",
       checkNumber: "12004567",
       nin: "19900101123456789012",
-      fullName: profiles.employee.fullName,
-      designation: profiles.employee.designation,
-      department: profiles.employee.department,
-      phone: profiles.employee.phone,
-      email: profiles.employee.email,
+      fullName: profiles.applicant.fullName,
+      designation: profiles.applicant.designation,
+      department: profiles.applicant.department,
+      phone: profiles.applicant.phone,
+      email: profiles.applicant.email,
       requestedRole: "District Planning Officer",
       reason: "Access is required to prepare and submit the approved annual planning records.",
       status: "PENDING_HOD",
@@ -155,7 +169,7 @@ async function main() {
   await prisma.accessRequest.create({
     data: {
       requestNumber: "UAR-2026-0002",
-      applicantId: profiles.employee.id,
+      applicantId: profiles.applicant.id,
       region: "Dodoma",
       lga: "Dodoma City Council",
       facility: "Regional Secretariat",
@@ -163,11 +177,11 @@ async function main() {
       environment: "PRODUCTION",
       checkNumber: "12004567",
       nin: "19900101123456789012",
-      fullName: profiles.employee.fullName,
-      designation: profiles.employee.designation,
-      department: profiles.employee.department,
-      phone: profiles.employee.phone,
-      email: profiles.employee.email,
+      fullName: profiles.applicant.fullName,
+      designation: profiles.applicant.designation,
+      department: profiles.applicant.department,
+      phone: profiles.applicant.phone,
+      email: profiles.applicant.email,
       requestedRole: "Planning Officer",
       reason: "The account was locked after unsuccessful login attempts and is required for reporting.",
       status: "PENDING_ICT",
@@ -187,7 +201,7 @@ async function main() {
   await prisma.accessRequest.create({
     data: {
       requestNumber: "UAR-2026-0003",
-      applicantId: profiles.employee.id,
+      applicantId: profiles.applicant.id,
       region: "Dodoma",
       lga: "Dodoma City Council",
       facility: "Regional Secretariat",
@@ -195,11 +209,11 @@ async function main() {
       environment: "TESTING",
       checkNumber: "12004567",
       nin: "19900101123456789012",
-      fullName: profiles.employee.fullName,
-      designation: profiles.employee.designation,
-      department: profiles.employee.department,
-      phone: profiles.employee.phone,
-      email: profiles.employee.email,
+      fullName: profiles.applicant.fullName,
+      designation: profiles.applicant.designation,
+      department: profiles.applicant.department,
+      phone: profiles.applicant.phone,
+      email: profiles.applicant.email,
       targetCheckNumber: "12007891",
       targetFullName: "John Mrema",
       targetDesignation: "Planning Assistant",

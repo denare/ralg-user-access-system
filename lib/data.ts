@@ -18,7 +18,7 @@ const requestInclude = {
 type RequestWithRelations = Prisma.AccessRequestGetPayload<{ include: typeof requestInclude }>;
 
 const roleLabels: Record<DbUserRole, UserRole> = {
-  EMPLOYEE: "Employee",
+  APPLICANT: "Employee (Applicant)",
   HOD: "Head of Department",
   ICT_OFFICER: "ICT Officer",
   ADMIN: "Administrator"
@@ -51,7 +51,7 @@ const decisionLabels: Record<Decision, "Approved" | "Rejected"> = {
 };
 
 function currentOwner(status: RequestStatus): UserRole {
-  if (status === "DRAFT") return "Employee";
+  if (status === "DRAFT") return "Employee (Applicant)";
   if (status === "PENDING_HOD") return "Head of Department";
   if (status === "PENDING_ICT" || status === "APPROVED") return "ICT Officer";
   return "Administrator";
@@ -105,8 +105,14 @@ export function toAccessRequest(request: RequestWithRelations): AccessRequest {
 }
 
 function visibilityWhere(profile: User): Prisma.AccessRequestWhereInput {
-  if (profile.role === "EMPLOYEE") return { applicantId: profile.id };
-  if (profile.role === "HOD") return { department: profile.department ?? "__unassigned__" };
+  if (profile.role === "APPLICANT") return { applicantId: profile.id };
+  if (profile.role === "HOD") return { department: profile.department ?? "__unassigned__", status: { not: "DRAFT" } };
+  if (profile.role === "ICT_OFFICER") {
+    return { OR: [
+      { status: { in: ["PENDING_ICT", "APPROVED", "COMPLETED"] } },
+      { approvals: { some: { approverRole: "ICT_OFFICER" } } }
+    ] };
+  }
   return {};
 }
 
@@ -160,7 +166,7 @@ export async function getDashboardStats(profile: User): Promise<DashboardStat[]>
   const completed = counts.COMPLETED ?? 0;
   const rejected = counts.REJECTED ?? 0;
 
-  if (profile.role === "EMPLOYEE") {
+  if (profile.role === "APPLICANT") {
     return [
       { label: "Requests Submitted", value: String(total), hint: "Your recorded requests" },
       { label: "Awaiting Action", value: String(pendingHod + pendingIct), hint: "Under HOD or ICT review" },
