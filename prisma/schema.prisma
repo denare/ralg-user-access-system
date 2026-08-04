@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum UserRole {
@@ -42,19 +43,23 @@ enum Decision {
 
 model User {
   id             String          @id @default(cuid())
+  authUserId     String          @unique
   fullName       String
   email          String          @unique
   username       String          @unique
-  passwordHash   String
   phone          String?
   department     String?
   designation    String?
   region         String?
   role           UserRole
+  isActive       Boolean         @default(true)
   requests       AccessRequest[] @relation("Requester")
   approvals      Approval[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+
+  @@index([role])
+  @@index([department])
 }
 
 model AccessRequest {
@@ -91,6 +96,11 @@ model AccessRequest {
   approvals           Approval[]
   createdAt           DateTime               @default(now())
   updatedAt           DateTime               @updatedAt
+
+  @@index([applicantId])
+  @@index([status])
+  @@index([department])
+  @@index([createdAt])
 }
 
 model RequestSystem {
@@ -98,6 +108,8 @@ model RequestSystem {
   requestId String
   request   AccessRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
   system    String
+
+  @@unique([requestId, system])
 }
 
 model Approval {
@@ -110,4 +122,7 @@ model Approval {
   decision    Decision
   comment     String?
   decidedAt   DateTime      @default(now())
+
+  @@index([requestId])
+  @@index([approverId])
 }

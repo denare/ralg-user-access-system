@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { reportCards, requests } from "@/lib/mock-data";
+import { getCurrentProfile } from "@/lib/auth";
+import { getReportCards } from "@/lib/data";
 
 export async function GET() {
-  return NextResponse.json({
-    summary: reportCards,
-    pendingApprovals: requests.filter(
-      (request) => request.status === "Pending HOD Approval" || request.status === "Pending ICT Approval"
-    ).length,
-    completed: requests.filter((request) => request.status === "Completed").length
-  });
+  const profile = await getCurrentProfile();
+  if (!profile || profile.role !== "ADMIN") {
+    return NextResponse.json({ error: "Administrator access required." }, { status: 403 });
+  }
+
+  return NextResponse.json({ data: await getReportCards() });
 }

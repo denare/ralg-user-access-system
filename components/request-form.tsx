@@ -1,7 +1,8 @@
 "use client";
 
-import { ReactNode, useState } from "react";
-import { regions, systemsCatalog } from "@/lib/mock-data";
+import { FormEvent, ReactNode, useState } from "react";
+import { useRouter } from "next/navigation";
+import { regions, systemsCatalog } from "@/lib/constants";
 
 const actionOptions = ["Create User", "Modify User", "Block User", "Reset Password"] as const;
 const environmentOptions = ["Production", "Testing"] as const;
@@ -31,8 +32,11 @@ const initialState = {
 };
 
 export function RequestForm() {
+  const router = useRouter();
   const [selectedSystems, setSelectedSystems] = useState<string[]>(["LGRCIS"]);
   const [form, setForm] = useState(initialState);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
 
   function toggleSystem(system: string) {
     setSelectedSystems((current) =>
@@ -42,9 +46,35 @@ export function RequestForm() {
 
   const requiresTargetUser = form.action === "Modify User" || form.action === "Block User";
 
+  async function saveRequest(mode: "draft" | "submit") {
+    setSaving(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, systems: selectedSystems, mode })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "The request could not be saved.");
+
+      router.push(`/requests/${result.id}`);
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "The request could not be saved.");
+      setSaving(false);
+    }
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    void saveRequest("submit");
+  }
+
   return (
-    <form className="grid gap-6 xl:grid-cols-[1.5fr_0.9fr]">
-      <section className="space-y-6 rounded-[2rem] border border-white/80 bg-white p-6 shadow-card">
+    <form onSubmit={handleSubmit} className="grid gap-6 xl:grid-cols-[1.5fr_0.9fr]">
+      <section className="space-y-6 border border-slate-200 bg-white p-6 shadow-card">
         <div className="grid gap-4 md:grid-cols-3">
           <Field label="Region">
             <select
@@ -114,7 +144,7 @@ export function RequestForm() {
 
         <SectionTitle
           title="Section A. Applicant Details"
-          description="Capture the employee information exactly once so the system can track request history."
+          description="Provide the applicant's official employment and contact information."
         />
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -196,7 +226,7 @@ export function RequestForm() {
 
         <SectionTitle
           title="Requested Systems"
-          description="Convert the paper checkbox grid into searchable, reportable structured data."
+          description="Select every government information system for which access is requested."
         />
 
         <div className="grid gap-3 md:grid-cols-3">
@@ -241,41 +271,51 @@ export function RequestForm() {
       </section>
 
       <aside className="space-y-6">
-        <section className="rounded-[2rem] border border-white/80 bg-white p-6 shadow-card">
-          <h3 className="text-lg font-semibold text-brand-ink">Workflow Preview</h3>
-          <ol className="mt-5 space-y-4 text-sm text-slate-600">
-            <li className="rounded-2xl bg-slate-50 p-4">1. Employee submits request and receives tracking number.</li>
-            <li className="rounded-2xl bg-slate-50 p-4">2. Head of Department reviews business need and approves or rejects.</li>
-            <li className="rounded-2xl bg-slate-50 p-4">3. ICT validates, provisions access, and closes the request with an audit trail.</li>
+        <section className="border border-slate-200 bg-white p-6 shadow-card">
+          <h3 className="border-b border-slate-200 pb-3 text-lg font-bold text-brand-ink">Approval Process</h3>
+          <ol className="mt-4 space-y-3 text-sm text-slate-600">
+            <li className="border-l-2 border-brand-government bg-slate-50 p-3">1. The applicant submits the request and receives a reference number.</li>
+            <li className="border-l-2 border-brand-government bg-slate-50 p-3">2. The Head of Department records an approval or rejection.</li>
+            <li className="border-l-2 border-brand-government bg-slate-50 p-3">3. ICT validates the authorization, provisions access, and closes the request.</li>
           </ol>
         </section>
 
-        <section className="rounded-[2rem] border border-brand-clay/20 bg-brand-sand/70 p-6">
-          <h3 className="text-lg font-semibold text-brand-ink">What this system should add</h3>
+        <section className="border border-amber-300 bg-amber-50 p-6">
+          <h3 className="text-lg font-bold text-brand-ink">Submission Requirements</h3>
           <ul className="mt-4 space-y-3 text-sm text-slate-700">
-            <li>Search by name, check number, region, department, and system.</li>
-            <li>Email notifications for submit, approve, reject, and complete events.</li>
-            <li>PDF export of approved forms with signatures and timestamps.</li>
-            <li>Audit log for compliance and internal review.</li>
+            <li>Confirm that personal and employment details are accurate.</li>
+            <li>Select only systems required for official duties.</li>
+            <li>State the requested role and provide a clear business justification.</li>
+            <li>False or incomplete information may result in rejection.</li>
           </ul>
         </section>
 
-        <section className="rounded-[2rem] border border-white/80 bg-brand-ink p-6 text-white shadow-card">
-          <h3 className="text-lg font-semibold">Draft Summary</h3>
+        <section className="border border-slate-800 bg-brand-ink p-6 text-white shadow-card">
+          <h3 className="border-b border-white/20 pb-3 text-lg font-bold">Request Summary</h3>
           <div className="mt-4 space-y-3 text-sm text-white/80">
             <p>Action: {form.action}</p>
             <p>Environment: {form.environment}</p>
             <p>Systems: {selectedSystems.join(", ") || "No system selected yet"}</p>
-            <p>Approver path: Head of Department → ICT Officer → Completed</p>
+            <p>Approval path: Head of Department to ICT Officer to Completion</p>
           </div>
           <div className="mt-6 flex gap-3">
-            <button type="button" className="rounded-full bg-white px-5 py-3 text-sm font-semibold text-brand-ink">
-              Save Draft
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => void saveRequest("draft")}
+              className="rounded-sm border border-white bg-transparent px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10 disabled:opacity-60"
+            >
+              {saving ? "Saving..." : "Save Draft"}
             </button>
-            <button type="submit" className="rounded-full bg-brand-clay px-5 py-3 text-sm font-semibold text-white">
-              Submit Request
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-sm bg-brand-gold px-5 py-2.5 text-sm font-bold text-slate-900 hover:bg-yellow-300 disabled:opacity-60"
+            >
+              {saving ? "Processing..." : "Submit Request"}
             </button>
           </div>
+          {message ? <p className="mt-4 border border-red-300 bg-red-50 p-3 text-sm text-red-800">{message}</p> : null}
         </section>
       </aside>
     </form>
@@ -293,7 +333,7 @@ function Field({
 }) {
   return (
     <label className={className}>
-      <span className="mb-2 block text-sm font-medium text-slate-700">{label}</span>
+      <span className="mb-2 block text-sm font-semibold text-slate-700">{label}</span>
       {children}
     </label>
   );
@@ -301,8 +341,8 @@ function Field({
 
 function SectionTitle({ title, description }: { title: string; description: string }) {
   return (
-    <div>
-      <h3 className="text-xl font-semibold text-brand-ink">{title}</h3>
+    <div className="border-b border-slate-200 pb-3">
+      <h3 className="text-xl font-bold text-brand-ink">{title}</h3>
       <p className="mt-2 text-sm text-slate-600">{description}</p>
     </div>
   );

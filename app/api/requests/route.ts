@@ -1,9 +1,77 @@
 import { NextResponse } from "next/server";
-import { requests } from "@/lib/mock-data";
+import { RequestAction, OperatingEnvironment } from "@prisma/client";
+import { getCurrentProfile } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { getVisibleRequests } from "@/lib/data";
+import { requestSchema } from "@/lib/validation";
+
+const actions: Record<string, RequestAction> = {
+  "Create User": "CREATE_USER",
+  "Modify User": "MODIFY_USER",
+  "Block User": "BLOCK_USER",
+  "Reset Password": "RESET_PASSWORD"
+};
+
+const environments: Record<string, OperatingEnvironment> = {
+  Production: "PRODUCTION",
+  Testing: "TESTING"
+};
 
 export async function GET() {
-  return NextResponse.json({
-    data: requests,
-    total: requests.length
+  const profile = await getCurrentProfile();
+  if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const data = await getVisibleRequests(profile);
+  return NextResponse.json({ data, total: data.length });
+}
+
+export async function POST(request: Request) {
+  const profile = await getCurrentProfile();
+  if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (profile.role !== "EMPLOYEE") {
+    return NextResponse.json({ error: "Only employees may submit access requests." }, { status: 403 });
+  }
+
+  const parsed = requestSchema.safeParse(await request.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Please correct the highlighted request information.", issues: parsed.error.flatten() }, { status: 400 });
+  }
+
+  const data = parsed.data;
+  const needsTarget = data.action === "Modify User" || data.action === "Block User";
+  if (needsTarget && (!data.targetCheckNumber || !data.targetFullName)) {
+    return NextResponse.json({ error: "Target user details are required for this action." }, { status: 400 });
+  }
+
+  const created = await prisma.accessRequest.create({
+    data: {
+      requestNumber: `UAR-${new Date().getFullYear()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+      applicantId: profile.id,
+      region: data.region,
+      lga: data.lga,
+      facility: data.facility,
+      action: actions[data.action],
+      environment: environments[data.environment],
+      checkNumber: data.checkNumber,
+      nin: data.nin,
+      fullName: data.fullName,
+      designation: data.designation,
+      department: data.department,
+      phone: data.phone,
+      email: data.email,
+      targetCheckNumber: needsTarget ? data.targetCheckNumber : null,
+      targetFullName: needsTarget ? data.targetFullName : null,
+      targetDesignation: needsTarget ? data.targetDesignation : null,
+      targetDepartment: needsTarget ? data.targetDepartment : null,
+      targetPhone: needsTarget ? data.targetPhone : null,
+      targetEmail: needsTarget ? data.targetEmail || null : null,
+      requestedRole: data.requestedRole,
+      otherSystem: data.otherSystem || null,
+      reason: data.reason,
+      status: data.mode === "draft" ? "DRAFT" : "PENDING_HOD",
+      systems: { create: data.systems.map((system) => ({ system })) }
+    }
   });
+
+  return NextResponse.json({ id: created.id, requestNumber: created.requestNumber }, { status: 201 });
 }

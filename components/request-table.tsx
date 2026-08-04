@@ -5,16 +5,16 @@ import { StatusPill } from "@/components/status-pill";
 
 export function RequestTable({ items }: { items: AccessRequest[] }) {
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-white/80 bg-white shadow-card">
+    <div className="overflow-x-auto border border-slate-200 bg-white shadow-card">
       <table className="min-w-full divide-y divide-slate-100 text-sm">
-        <thead className="bg-slate-50">
-          <tr className="text-left text-slate-500">
-            <th className="px-5 py-4 font-medium">Request</th>
-            <th className="px-5 py-4 font-medium">Applicant</th>
-            <th className="px-5 py-4 font-medium">Action</th>
-            <th className="px-5 py-4 font-medium">Systems</th>
-            <th className="px-5 py-4 font-medium">Status</th>
-            <th className="px-5 py-4 font-medium">Updated</th>
+        <thead className="bg-brand-ink">
+          <tr className="text-left text-white">
+            <th className="px-5 py-4 font-semibold">Request</th>
+            <th className="px-5 py-4 font-semibold">Applicant</th>
+            <th className="px-5 py-4 font-semibold">Action</th>
+            <th className="px-5 py-4 font-semibold">Systems</th>
+            <th className="px-5 py-4 font-semibold">Status</th>
+            <th className="px-5 py-4 font-semibold">Updated</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">

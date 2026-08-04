@@ -1,18 +1,25 @@
 import type { Metadata } from "next";
 import { ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
+import { getCurrentProfile } from "@/lib/auth";
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
-  title: "User Access Workflow System",
-  description: "Digital workflow management system for user access requests."
+  title: "Government User Access Management System",
+  description: "Official digital workflow for government information system access requests."
 };
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const profile = await getCurrentProfile();
+
   return (
     <html lang="en">
       <body>
-        <AppShell>{children}</AppShell>
+        <AppShell
+          profile={profile ? { fullName: profile.fullName, role: profile.role } : null}
+        >
+          {children}
+        </AppShell>
       </body>
     </html>
   );

@@ -8,19 +8,27 @@
 
 body {
   margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  background: #f1f5f9;
+}
+
+button,
+input,
+select,
+textarea {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 @layer components {
   .field {
-    @apply w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-brand-moss focus:bg-white focus:ring-2 focus:ring-brand-moss/20;
+    @apply w-full rounded-sm border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand-government focus:ring-2 focus:ring-brand-government/15;
   }
 
   .choice-card {
-    @apply flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-brand-moss hover:bg-white;
+    @apply flex items-center gap-3 rounded-sm border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-brand-government hover:bg-emerald-50/40;
   }
 
   .choice-card input {
-    @apply h-4 w-4 accent-[color:#2f6b57];
+    @apply h-4 w-4 accent-[color:#006b3f];
   }
 }

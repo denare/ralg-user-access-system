@@ -1,0 +1,9 @@
+node_modules/
+.next/
+.next-dev/
+supabase/.temp/
+.env
+.env.local
+npm-debug.log*
+*.tsbuildinfo
+next-env.d.ts
