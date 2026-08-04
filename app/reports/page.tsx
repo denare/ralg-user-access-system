@@ -7,7 +7,8 @@ export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
   const profile = await requireProfile(["ADMIN"]);
-  const [reportCards, requests] = await Promise.all([getReportCards(), getVisibleRequests(profile)]);
+  const reportCards = await getReportCards();
+  const requests = await getVisibleRequests(profile);
   const completed = requests.filter((request) => request.status === "Completed");
 
   return (

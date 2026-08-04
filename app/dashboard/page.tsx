@@ -12,11 +12,9 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const profile = await requireProfile();
-  const [stats, requests, reportCards] = await Promise.all([
-    getDashboardStats(profile),
-    getVisibleRequests(profile),
-    profile.role === "ADMIN" ? getReportCards() : Promise.resolve([])
-  ]);
+  const stats = await getDashboardStats(profile);
+  const requests = await getVisibleRequests(profile);
+  const reportCards = profile.role === "ADMIN" ? await getReportCards() : [];
 
   return (
     <div className="space-y-6">

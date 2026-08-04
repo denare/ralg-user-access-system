@@ -145,13 +145,20 @@ export async function getApprovalQueue(profile: User) {
 
 export async function getDashboardStats(profile: User): Promise<DashboardStat[]> {
   const visible = visibilityWhere(profile);
-  const [total, pendingHod, pendingIct, completed, rejected] = await Promise.all([
-    prisma.accessRequest.count({ where: visible }),
-    prisma.accessRequest.count({ where: { ...visible, status: "PENDING_HOD" } }),
-    prisma.accessRequest.count({ where: { ...visible, status: "PENDING_ICT" } }),
-    prisma.accessRequest.count({ where: { ...visible, status: "COMPLETED" } }),
-    prisma.accessRequest.count({ where: { ...visible, status: "REJECTED" } })
-  ]);
+  const grouped = await prisma.accessRequest.groupBy({
+    by: ["status"],
+    where: visible,
+    _count: { _all: true }
+  });
+  const counts = grouped.reduce<Partial<Record<RequestStatus, number>>>((result, row) => {
+    result[row.status] = row._count._all;
+    return result;
+  }, {});
+  const total = grouped.reduce((sum, row) => sum + row._count._all, 0);
+  const pendingHod = counts.PENDING_HOD ?? 0;
+  const pendingIct = counts.PENDING_ICT ?? 0;
+  const completed = counts.COMPLETED ?? 0;
+  const rejected = counts.REJECTED ?? 0;
 
   if (profile.role === "EMPLOYEE") {
     return [
@@ -185,7 +192,7 @@ export async function getReportCards(): Promise<ReportCard[]> {
   const start = new Date();
   start.setDate(1);
   start.setHours(0, 0, 0, 0);
-  const [month, resets, newAccounts, pending] = await Promise.all([
+  const [month, resets, newAccounts, pending] = await prisma.$transaction([
     prisma.accessRequest.count({ where: { createdAt: { gte: start } } }),
     prisma.accessRequest.count({ where: { action: "RESET_PASSWORD", createdAt: { gte: start } } }),
     prisma.accessRequest.count({ where: { action: "CREATE_USER", createdAt: { gte: start } } }),

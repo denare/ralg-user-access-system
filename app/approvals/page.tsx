@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
 
 export default async function ApprovalsPage() {
   const profile = await requireProfile(["HOD", "ICT_OFFICER"]);
-  const [queue, stats] = await Promise.all([getApprovalQueue(profile), getDashboardStats(profile)]);
+  const queue = await getApprovalQueue(profile);
+  const stats = await getDashboardStats(profile);
 
   return (
     <div className="space-y-6">
