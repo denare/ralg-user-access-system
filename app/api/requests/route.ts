@@ -43,13 +43,30 @@ export async function POST(request: Request) {
 
     const parsed = requestSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Please correct the highlighted request information.", issues: parsed.error.flatten() }, { status: 400 });
+      const issues = parsed.error.flatten();
+      return NextResponse.json(
+        {
+          error: "Please correct the highlighted request information.",
+          fieldErrors: issues.fieldErrors,
+          formErrors: issues.formErrors
+        },
+        { status: 400 }
+      );
     }
 
     const data = parsed.data;
     const needsTarget = data.action === "Modify User" || data.action === "Block User";
     if (needsTarget && (!data.targetCheckNumber || !data.targetFullName)) {
-      return NextResponse.json({ error: "Target user details are required for this action." }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Target user details are required for this action.",
+          fieldErrors: {
+            ...(!data.targetCheckNumber ? { targetCheckNumber: ["Enter the target user's check number."] } : {}),
+            ...(!data.targetFullName ? { targetFullName: ["Enter the target user's full name."] } : {})
+          }
+        },
+        { status: 400 }
+      );
     }
 
     const configuredSystems = await withDatabaseRetry(() => prisma.systemCatalog.findMany({
@@ -57,7 +74,15 @@ export async function POST(request: Request) {
       select: { name: true }
     }));
     if (configuredSystems.length !== new Set(data.systems).size) {
-      return NextResponse.json({ error: "Select only active systems from the official system catalogue." }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Select only active systems from the official system catalogue.",
+          fieldErrors: {
+            systems: ["Choose one or more active systems from the official catalogue."]
+          }
+        },
+        { status: 400 }
+      );
     }
 
     const requestId = crypto.randomUUID();

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ReactNode } from "react";
 import { AppShell } from "@/components/app-shell";
-import { getCurrentProfile } from "@/lib/auth";
+import { getCurrentShellProfile } from "@/lib/auth";
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const profile = await getCurrentProfile();
+  const profile = await getCurrentShellProfile();
 
   return (
     <html lang="en">

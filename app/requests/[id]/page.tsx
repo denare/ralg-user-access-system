@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
+import { RequestActionNotice } from "@/components/request-action-notice";
 import { StatusPill } from "@/components/status-pill";
 import { requireProfile } from "@/lib/auth";
 import { getVisibleRequest } from "@/lib/data";
@@ -20,6 +21,7 @@ export default async function RequestDetailPage({
 
   return (
     <div className="space-y-6">
+      <RequestActionNotice />
       <PageHeader
         eyebrow={request.requestNumber}
         title={`${request.action} for ${request.applicantName}`}
