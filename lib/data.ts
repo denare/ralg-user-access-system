@@ -195,14 +195,19 @@ export async function getDashboardStats(profile: User): Promise<DashboardStat[]>
 }
 
 export async function getReportCards(): Promise<ReportCard[]> {
+  return getScopedReportCards();
+}
+
+export async function getScopedReportCards(profile?: User): Promise<ReportCard[]> {
   const start = new Date();
   start.setDate(1);
   start.setHours(0, 0, 0, 0);
+  const where = profile ? visibilityWhere(profile) : {};
   const [month, resets, newAccounts, pending] = await prisma.$transaction([
-    prisma.accessRequest.count({ where: { createdAt: { gte: start } } }),
-    prisma.accessRequest.count({ where: { action: "RESET_PASSWORD", createdAt: { gte: start } } }),
-    prisma.accessRequest.count({ where: { action: "CREATE_USER", createdAt: { gte: start } } }),
-    prisma.accessRequest.count({ where: { status: { in: ["PENDING_HOD", "PENDING_ICT"] } } })
+    prisma.accessRequest.count({ where: { ...where, createdAt: { gte: start } } }),
+    prisma.accessRequest.count({ where: { ...where, action: "RESET_PASSWORD", createdAt: { gte: start } } }),
+    prisma.accessRequest.count({ where: { ...where, action: "CREATE_USER", createdAt: { gte: start } } }),
+    prisma.accessRequest.count({ where: { ...where, status: { in: ["PENDING_HOD", "PENDING_ICT"] } } })
   ]);
   return [
     { title: "Requests This Month", value: String(month), change: "Submitted since the first day of the month" },

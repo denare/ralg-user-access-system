@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { DownloadPdfButton } from "@/components/download-pdf-button";
 import { PageHeader } from "@/components/page-header";
 import { RequestActionNotice } from "@/components/request-action-notice";
 import { StatusPill } from "@/components/status-pill";
@@ -26,7 +27,7 @@ export default async function RequestDetailPage({
         eyebrow={request.requestNumber}
         title={`${request.action} for ${request.applicantName}`}
         description={`Submitted on ${formatDate(request.createdAt)} and currently owned by ${request.currentOwner}.`}
-        action={<StatusPill status={request.status} />}
+        action={<div className="flex flex-wrap items-center gap-3"><StatusPill status={request.status} /><DownloadPdfButton requestId={request.id} /></div>}
       />
 
       <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -50,6 +51,10 @@ export default async function RequestDetailPage({
           <div className="mt-6 border border-slate-200 bg-slate-50 p-4">
             <p className="text-sm font-medium text-slate-500">Reason</p>
             <p className="mt-2 text-sm leading-6 text-slate-700">{request.reason}</p>
+          </div>
+
+          <div className="mt-6 flex justify-end">
+            <DownloadPdfButton requestId={request.id} variant="secondary" />
           </div>
 
           {request.targetUser ? (
