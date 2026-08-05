@@ -1,4 +1,4 @@
-# Government User Access Management System
+# Chalinze User Access Management System
 
 Official workflow application for requesting, authorizing, provisioning, tracking, and auditing access to government information systems.
 
