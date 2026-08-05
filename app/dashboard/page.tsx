@@ -25,7 +25,7 @@ export default async function DashboardPage() {
         action={profile.role === "APPLICANT" ? (
           <Link
             href="/requests/new"
-            className="inline-flex items-center gap-2 rounded-sm bg-brand-government px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800"
+            className="button-primary"
           >
             Submit New Request
             <ArrowRight className="h-4 w-4" />
@@ -40,7 +40,7 @@ export default async function DashboardPage() {
       </section>
 
       <section className={profile.role === "ADMIN" ? "grid gap-6 xl:grid-cols-[1.35fr_0.65fr]" : "grid gap-6"}>
-        <div className="border border-slate-200 bg-white p-6 shadow-card">
+        <div className="border border-slate-200 bg-white p-5 shadow-card sm:p-6">
           <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
             <div>
               <h3 className="text-xl font-bold text-brand-ink">Current Request Register</h3>
@@ -95,7 +95,7 @@ export default async function DashboardPage() {
 
 function ControlItem({ icon, title, description }: { icon: ReactNode; title: string; description: string }) {
   return (
-    <div className="border-l-2 border-brand-government pl-4">
+    <div className="rounded-r-lg border-l-2 border-brand-government bg-slate-50/70 px-4 py-3">
       <div className="flex items-center gap-3 text-brand-government">
         {icon}
         <h4 className="font-semibold text-brand-ink">{title}</h4>

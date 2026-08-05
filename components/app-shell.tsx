@@ -4,20 +4,20 @@ import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
 import {
-  Bell,
-  ChevronDown,
   ClipboardCheck,
   FileBarChart2,
   FileText,
   LayoutDashboard,
   LogOut,
+  Menu,
   ShieldCheck,
   UserRound,
   Users,
   Settings,
-  ScrollText
+  ScrollText,
+  X
 } from "lucide-react";
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -44,102 +44,110 @@ const roleLabels = {
 export function AppShell({ children, profile }: { children: ReactNode; profile: ShellProfile }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   if (["/login", "/signup", "/forgot-password", "/update-password", "/privacy"].includes(pathname)) {
     return <>{children}</>;
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
+    <div className="min-h-screen text-slate-900">
       <div className="h-1.5 bg-[linear-gradient(90deg,#1eb4e9_0_25%,#000_25%_37.5%,#fcd116_37.5%_62.5%,#000_62.5%_75%,#006b3f_75%)]" />
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex min-h-20 max-w-[1500px] items-center justify-between gap-6 px-4 py-3 lg:px-8">
+      <header className="sticky top-0 z-30 border-b border-slate-200/90 bg-white/95 backdrop-blur-md">
+        <div className="mx-auto flex min-h-[76px] max-w-[1600px] items-center justify-between gap-4 px-4 py-3 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="grid h-12 w-12 place-items-center border-2 border-brand-government bg-brand-government text-white">
-              <ShieldCheck className="h-7 w-7" aria-hidden="true" />
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-emerald-800 bg-brand-government text-white shadow-sm">
+              <ShieldCheck className="h-6 w-6" aria-hidden="true" />
             </div>
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand-government sm:text-[11px]">
                 The United Republic of Tanzania
               </p>
-              <p className="text-sm font-bold uppercase text-brand-ink sm:text-base">
+              <p className="mt-0.5 max-w-2xl font-serif text-xs font-bold uppercase leading-snug text-brand-ink sm:text-sm lg:text-base">
                 President&apos;s Office - Regional Administration and Local Government
               </p>
             </div>
           </div>
-          <div className="hidden items-center gap-4 md:flex">
-            <button className="relative border border-slate-300 p-2.5 text-slate-600" aria-label="Notifications">
-              <Bell className="h-5 w-5" />
-            </button>
-            <div className="flex items-center gap-3 border-l border-slate-200 pl-4">
-              <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-government text-white">
+          <div className="flex items-center gap-3">
+            <div className="hidden items-center gap-3 border-l border-slate-200 pl-4 md:flex">
+              <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-ink text-white">
                 <UserRound className="h-4 w-4" />
               </div>
               <div className="text-sm">
                 <p className="font-semibold text-slate-900">{profile?.fullName ?? "Authorized User"}</p>
                 <p className="text-xs text-slate-500">{profile ? roleLabels[profile.role] : "User"}</p>
               </div>
-              <ChevronDown className="h-4 w-4 text-slate-500" />
             </div>
+            <button
+              type="button"
+              onClick={() => setMobileOpen(true)}
+              className="grid h-11 w-11 place-items-center rounded-lg border border-slate-300 text-brand-ink lg:hidden"
+              aria-label="Open navigation menu"
+              aria-expanded={mobileOpen}
+            >
+              <Menu className="h-5 w-5" />
+            </button>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto grid min-h-[calc(100vh-87px)] max-w-[1500px] lg:grid-cols-[250px_1fr]">
-        <aside className="border-r border-slate-800 bg-brand-ink px-4 py-6 text-white">
+      {mobileOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button className="absolute inset-0 bg-brand-ink/55 backdrop-blur-sm" onClick={() => setMobileOpen(false)} aria-label="Close navigation menu" />
+          <aside className="mobile-drawer relative flex h-full w-[min(88vw,340px)] flex-col bg-brand-ink p-5 text-white shadow-2xl">
+            <div className="mb-5 flex items-center justify-between border-b border-white/15 pb-5">
+              <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand-gold">Official Portal</p><p className="mt-1 font-serif font-bold">Access Management</p></div>
+              <button onClick={() => setMobileOpen(false)} className="grid h-10 w-10 place-items-center rounded-lg border border-white/20" aria-label="Close navigation menu"><X className="h-5 w-5" /></button>
+            </div>
+            <Navigation pathname={pathname} profile={profile} onNavigate={() => setMobileOpen(false)} />
+            <AccountSummary profile={profile} />
+            <SignOutButton router={router} />
+          </aside>
+        </div>
+      ) : null}
+
+      <div className="mx-auto grid min-h-[calc(100vh-83px)] max-w-[1600px] lg:grid-cols-[268px_1fr]">
+        <aside className="sticky top-[76px] hidden h-[calc(100vh-76px)] flex-col border-r border-slate-800 bg-brand-ink px-4 py-6 text-white lg:flex">
           <div className="mb-6 border-b border-white/15 px-3 pb-5">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-brand-gold">Government Portal</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-gold">Official Government Portal</p>
             <h1 className="mt-2 text-lg font-semibold leading-snug">User Access Management System</h1>
           </div>
-
-          <nav className="space-y-1" aria-label="Primary navigation">
-            {navItems.filter((item) => profile && (item.roles as readonly string[]).includes(profile.role)).map(({ href, label, icon: Icon }) => (
-              <Link
-                key={href}
-                href={href as Route}
-                className={`flex items-center gap-3 border-l-4 px-4 py-3 text-sm font-medium transition ${
-                  pathname === href
-                    ? "border-brand-gold bg-white/10 text-white"
-                    : "border-transparent text-white/75 hover:border-white/40 hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="mt-8 border border-white/15 bg-white/5 p-4">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <ShieldCheck className="h-4 w-4" />
-              Security Notice
+          <Navigation pathname={pathname} profile={profile} />
+          <div className="mt-auto">
+            <div className="rounded-xl border border-white/15 bg-white/[0.06] p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold"><ShieldCheck className="h-4 w-4 text-brand-gold" />Audited Workspace</div>
+              <p className="mt-2 text-xs leading-5 text-white/65">Requests, decisions, and account changes are attributable and retained for oversight.</p>
             </div>
-            <p className="mt-3 text-sm text-white/70">
-              Access is role-controlled. All request submissions and approval decisions are recorded for audit.
-            </p>
+            <SignOutButton router={router} />
           </div>
-
-          <button
-            type="button"
-            onClick={async () => {
-              await createClient().auth.signOut();
-              router.replace("/login");
-              router.refresh();
-            }}
-            className="mt-6 flex w-full items-center gap-3 border-t border-white/15 px-4 pt-5 text-sm text-white/70 hover:text-white"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign Out
-          </button>
         </aside>
 
         <div className="min-w-0">
-          <main className="space-y-6 p-4 lg:p-8">{children}</main>
-          <footer className="border-t border-slate-200 bg-white px-8 py-5 text-center text-xs text-slate-500">
-            Government User Access Management System &copy; 2026. All access and actions are subject to audit.
+          <main className="space-y-6 p-4 sm:p-6 lg:p-8 xl:p-10">{children}</main>
+          <footer className="border-t border-slate-200 bg-white/75 px-8 py-5 text-center text-xs leading-5 text-slate-500">
+            Government User Access Management System &copy; 2026. Authorized use only. All access and actions are subject to audit.
           </footer>
         </div>
       </div>
     </div>
   );
+}
+
+function Navigation({ pathname, profile, onNavigate }: { pathname: string; profile: ShellProfile; onNavigate?: () => void }) {
+  return <nav className="space-y-1" aria-label="Primary navigation">
+    {navItems.filter((item) => profile && (item.roles as readonly string[]).includes(profile.role)).map(({ href, label, icon: Icon }) => {
+      const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`));
+      return <Link key={href} href={href as Route} onClick={onNavigate} aria-current={active ? "page" : undefined} className={`flex min-h-11 items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-semibold ${active ? "bg-white text-brand-ink shadow-sm" : "text-white/70 hover:bg-white/[0.07] hover:text-white"}`}>
+        <Icon className={`h-4 w-4 ${active ? "text-brand-government" : ""}`} />{label}
+      </Link>;
+    })}
+  </nav>;
+}
+
+function AccountSummary({ profile }: { profile: ShellProfile }) {
+  return <div className="mt-auto border-t border-white/15 pt-5"><p className="text-sm font-semibold">{profile?.fullName ?? "Authorized User"}</p><p className="mt-1 text-xs text-white/60">{profile ? roleLabels[profile.role] : "User"}</p></div>;
+}
+
+function SignOutButton({ router }: { router: ReturnType<typeof useRouter> }) {
+  return <button type="button" onClick={async () => { await createClient().auth.signOut(); router.replace("/login"); router.refresh(); }} className="mt-4 flex min-h-11 w-full items-center gap-3 rounded-lg px-3.5 text-sm font-semibold text-white/70 hover:bg-white/[0.07] hover:text-white"><LogOut className="h-4 w-4" />Sign Out</button>;
 }

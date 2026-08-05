@@ -21,7 +21,7 @@ const config: Config = {
         }
       },
       boxShadow: {
-        card: "0 1px 3px rgba(15, 23, 42, 0.10)"
+        card: "0 1px 2px rgba(11,34,57,0.06), 0 12px 32px rgba(11,34,57,0.055)"
       },
       backgroundImage: {
         mesh:

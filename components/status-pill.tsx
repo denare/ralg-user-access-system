@@ -12,7 +12,7 @@ const statusStyles: Record<RequestStatus, string> = {
 
 export function StatusPill({ status }: { status: RequestStatus }) {
   return (
-    <span className={cn("inline-flex rounded-full px-3 py-1 text-xs font-semibold", statusStyles[status])}>
+    <span className={cn("inline-flex items-center rounded-full border border-current/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wide", statusStyles[status])}>
       {status}
     </span>
   );
