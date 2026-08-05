@@ -17,7 +17,7 @@ import {
   ScrollText,
   X
 } from "lucide-react";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -45,15 +45,56 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   if (["/login", "/signup", "/forgot-password", "/update-password", "/privacy"].includes(pathname)) {
     return <>{children}</>;
   }
 
+  if (!mounted) {
+    return <div className="min-h-screen pl-16 text-slate-900 lg:pl-0">
+      <main className="space-y-6 p-4 sm:p-6 lg:p-8 xl:p-10">{children}</main>
+    </div>;
+  }
+
   return (
     <div className="min-h-screen text-slate-900">
-      <div className="h-1.5 bg-[linear-gradient(90deg,#1eb4e9_0_25%,#000_25%_37.5%,#fcd116_37.5%_62.5%,#000_62.5%_75%,#006b3f_75%)]" />
-      <header className="sticky top-0 z-30 border-b border-slate-200/90 bg-white/95 backdrop-blur-md">
+      <div className="hidden h-1.5 bg-[linear-gradient(90deg,#1eb4e9_0_25%,#000_25%_37.5%,#fcd116_37.5%_62.5%,#000_62.5%_75%,#006b3f_75%)] lg:block" />
+      <aside className="fixed inset-y-0 left-0 z-40 flex w-16 flex-col border-r border-slate-800 bg-brand-ink text-white shadow-xl lg:hidden">
+        <div className="h-1.5 bg-[linear-gradient(180deg,#1eb4e9_0_25%,#000_25%_37.5%,#fcd116_37.5%_62.5%,#000_62.5%_75%,#006b3f_75%)]" />
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          className="mx-auto mt-4 grid h-11 w-11 place-items-center rounded-lg border border-white/15 bg-white/[0.06] text-white"
+          aria-label="Open navigation menu"
+          aria-expanded={mobileOpen}
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+        <div className="mx-auto mt-5 grid h-10 w-10 place-items-center rounded-lg bg-brand-government text-white">
+          <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+        </div>
+        <div className="mt-auto border-t border-white/15 p-2">
+          <button
+            type="button"
+            onClick={async () => {
+              await createClient().auth.signOut();
+              router.replace("/login");
+              router.refresh();
+            }}
+            className="grid h-11 w-11 place-items-center rounded-lg text-white/70 hover:bg-white/[0.07] hover:text-white"
+            aria-label="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
+      </aside>
+
+      <header className="sticky top-0 z-30 hidden border-b border-slate-200/90 bg-white/95 backdrop-blur-md lg:block">
         <div className="mx-auto flex min-h-[76px] max-w-[1600px] items-center justify-between gap-4 px-4 py-3 lg:px-8">
           <div className="flex items-center gap-3">
             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-emerald-800 bg-brand-government text-white shadow-sm">
@@ -78,23 +119,14 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
                 <p className="text-xs text-slate-500">{profile ? roleLabels[profile.role] : "User"}</p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setMobileOpen(true)}
-              className="grid h-11 w-11 place-items-center rounded-lg border border-slate-300 text-brand-ink lg:hidden"
-              aria-label="Open navigation menu"
-              aria-expanded={mobileOpen}
-            >
-              <Menu className="h-5 w-5" />
-            </button>
           </div>
         </div>
       </header>
 
       {mobileOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-y-0 left-16 right-0 z-50 lg:hidden">
           <button className="absolute inset-0 bg-brand-ink/55 backdrop-blur-sm" onClick={() => setMobileOpen(false)} aria-label="Close navigation menu" />
-          <aside className="mobile-drawer relative flex h-full w-[min(88vw,340px)] flex-col bg-brand-ink p-5 text-white shadow-2xl">
+          <aside className="mobile-drawer relative flex h-full w-[min(calc(100vw-4rem),340px)] flex-col bg-brand-ink p-5 text-white shadow-2xl">
             <div className="mb-5 flex items-center justify-between border-b border-white/15 pb-5">
               <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand-gold">Official Portal</p><p className="mt-1 font-serif font-bold">Access Management</p></div>
               <button onClick={() => setMobileOpen(false)} className="grid h-10 w-10 place-items-center rounded-lg border border-white/20" aria-label="Close navigation menu"><X className="h-5 w-5" /></button>
@@ -106,7 +138,7 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
         </div>
       ) : null}
 
-      <div className="mx-auto grid min-h-[calc(100vh-83px)] max-w-[1600px] lg:grid-cols-[268px_1fr]">
+      <div className="mx-auto grid min-h-screen max-w-[1600px] pl-16 lg:min-h-[calc(100vh-83px)] lg:grid-cols-[268px_1fr] lg:pl-0">
         <aside className="sticky top-[76px] hidden h-[calc(100vh-76px)] flex-col border-r border-slate-800 bg-brand-ink px-4 py-6 text-white lg:flex">
           <div className="mb-6 border-b border-white/15 px-3 pb-5">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-gold">Official Government Portal</p>
