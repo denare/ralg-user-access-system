@@ -40,10 +40,10 @@ export function ApprovalActions({ requestId, role }: { requestId: string; role: 
         aria-label="Decision comment"
       />
       <div className="flex justify-end gap-3">
-        <button disabled={saving} onClick={() => void decide("reject")} className="rounded-sm border border-red-700 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-60">
+        <button disabled={saving} onClick={() => void decide("reject")} className="button-secondary border-red-300 text-red-700">
           Reject
         </button>
-        <button disabled={saving} onClick={() => void decide("approve")} className="rounded-sm bg-brand-government px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+        <button disabled={saving} onClick={() => void decide("approve")} className="button-primary">
           {saving ? "Recording..." : role === "ICT_OFFICER" ? "Approve and Mark Completed" : "Approve"}
         </button>
       </div>

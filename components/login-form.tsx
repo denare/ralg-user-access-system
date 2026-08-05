@@ -100,7 +100,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="flex w-full items-center justify-center gap-2 rounded-sm bg-brand-government px-5 py-3 text-sm font-bold uppercase tracking-wide text-white transition hover:bg-emerald-800 disabled:cursor-wait disabled:opacity-75"
+        className="button-primary w-full uppercase tracking-wide"
       >
         {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <LockKeyhole className="h-4 w-4" />}
         {submitting ? "Signing in..." : "Sign In"}

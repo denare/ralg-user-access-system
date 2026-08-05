@@ -4,31 +4,134 @@
 
 :root {
   color-scheme: light;
+  --civic-ink: #0b2239;
+  --civic-ink-soft: #173a57;
+  --civic-green: #006b3f;
+  --civic-green-dark: #004f31;
+  --civic-gold: #f2c94c;
+  --civic-paper: #f6f4ee;
+  --civic-line: #dce3e8;
+  --ease-out-civic: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 body {
   margin: 0;
+  min-width: 320px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--civic-ink);
+  background-color: var(--civic-paper);
+  background-image:
+    linear-gradient(rgba(11, 34, 57, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(11, 34, 57, 0.025) 1px, transparent 1px);
+  background-size: 32px 32px;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
   font-family: Georgia, "Times New Roman", serif;
-  background: #f1f5f9;
+  text-wrap: balance;
 }
 
 button,
 input,
 select,
 textarea {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font: inherit;
+}
+
+::selection {
+  color: white;
+  background: var(--civic-green);
+}
+
+:focus-visible {
+  outline: 3px solid rgba(30, 180, 233, 0.55);
+  outline-offset: 3px;
 }
 
 @layer components {
   .field {
-    @apply w-full rounded-sm border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-brand-government focus:ring-2 focus:ring-brand-government/15;
+    @apply min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-government focus:ring-4 focus:ring-brand-government/10;
+    transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
   }
 
   .choice-card {
-    @apply flex items-center gap-3 rounded-sm border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-brand-government hover:bg-emerald-50/40;
+    @apply flex min-h-12 items-center gap-3 rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-700;
+    transition: border-color 160ms ease, background-color 160ms ease, transform 140ms var(--ease-out-civic);
   }
 
   .choice-card input {
     @apply h-4 w-4 accent-[color:#006b3f];
+  }
+
+  .shadow-card {
+    border-radius: 0.875rem;
+    box-shadow: 0 1px 2px rgba(11, 34, 57, 0.06), 0 12px 32px rgba(11, 34, 57, 0.055);
+  }
+
+  .button-primary {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-government px-5 py-2.5 text-sm font-bold text-white disabled:cursor-wait disabled:opacity-60;
+    box-shadow: 0 1px 2px rgba(0, 79, 49, 0.35), inset 0 1px rgba(255, 255, 255, 0.12);
+    transition: background-color 160ms ease, transform 140ms var(--ease-out-civic), box-shadow 160ms ease;
+  }
+
+  .button-secondary {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-bold text-brand-ink disabled:cursor-wait disabled:opacity-60;
+    transition: border-color 160ms ease, background-color 160ms ease, transform 140ms var(--ease-out-civic);
+  }
+
+  .auth-canvas {
+    background-color: var(--civic-paper);
+    background-image:
+      radial-gradient(circle at 12% 18%, rgba(30, 180, 233, 0.11), transparent 27%),
+      radial-gradient(circle at 88% 74%, rgba(0, 107, 63, 0.1), transparent 29%),
+      linear-gradient(rgba(11, 34, 57, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(11, 34, 57, 0.03) 1px, transparent 1px);
+    background-size: auto, auto, 40px 40px, 40px 40px;
+  }
+
+  .mobile-drawer {
+    transform: translateX(0);
+    transition: transform 220ms var(--ease-out-civic), opacity 180ms ease;
+    @starting-style {
+      opacity: 0;
+      transform: translateX(-100%);
+    }
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .choice-card:hover {
+    border-color: var(--civic-green);
+    background: #f0faf5;
+  }
+
+  .button-primary:hover {
+    background: var(--civic-green-dark);
+    box-shadow: 0 4px 14px rgba(0, 79, 49, 0.2);
+  }
+
+  .button-secondary:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+  }
+}
+
+button:not(:disabled):active,
+a[href]:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
