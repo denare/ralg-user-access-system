@@ -7,7 +7,22 @@ const createSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("department"), name: z.string().trim().min(2).max(120), code: z.string().trim().toUpperCase().min(2).max(20) }),
   z.object({ type: z.literal("system"), name: z.string().trim().min(2).max(80), description: z.string().trim().max(240).optional() })
 ]);
-const updateSchema = z.object({ type: z.enum(["department", "system"]), id: z.string().min(1), isActive: z.boolean() });
+const updateSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("department"),
+    id: z.string().min(1),
+    name: z.string().trim().min(2).max(120).optional(),
+    code: z.string().trim().toUpperCase().min(2).max(20).optional(),
+    isActive: z.boolean().optional()
+  }).refine((value) => value.name !== undefined || value.code !== undefined || value.isActive !== undefined),
+  z.object({
+    type: z.literal("system"),
+    id: z.string().min(1),
+    name: z.string().trim().min(2).max(80).optional(),
+    description: z.string().trim().max(240).optional(),
+    isActive: z.boolean().optional()
+  }).refine((value) => value.name !== undefined || value.description !== undefined || value.isActive !== undefined)
+]);
 
 async function administrator() {
   const profile = await getCurrentProfile();
@@ -32,9 +47,29 @@ export async function PATCH(request: Request) {
   if (!admin) return NextResponse.json({ error: "System administrator access required." }, { status: 403 });
   const parsed = updateSchema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid configuration update." }, { status: 400 });
-  const { type, id, isActive } = parsed.data;
-  if (type === "department") await prisma.department.update({ where: { id }, data: { isActive } });
-  else await prisma.systemCatalog.update({ where: { id }, data: { isActive } });
-  await prisma.auditLog.create({ data: { actorId: admin.id, action: isActive ? "CONFIGURATION_ENABLED" : "CONFIGURATION_DISABLED", entityType: type, entityId: id } });
-  return NextResponse.json({ id, isActive });
+  const { type, id } = parsed.data;
+
+  if (type === "department") {
+    const item = await prisma.department.update({
+      where: { id },
+      data: {
+        ...(parsed.data.name !== undefined ? { name: parsed.data.name } : {}),
+        ...(parsed.data.code !== undefined ? { code: parsed.data.code } : {}),
+        ...(parsed.data.isActive !== undefined ? { isActive: parsed.data.isActive } : {})
+      }
+    });
+    await prisma.auditLog.create({ data: { actorId: admin.id, action: "CONFIGURATION_UPDATED", entityType: type, entityId: id, details: parsed.data } });
+    return NextResponse.json({ id: item.id, name: item.name, code: item.code, isActive: item.isActive });
+  }
+
+  const item = await prisma.systemCatalog.update({
+    where: { id },
+    data: {
+      ...(parsed.data.name !== undefined ? { name: parsed.data.name } : {}),
+      ...(parsed.data.description !== undefined ? { description: parsed.data.description } : {}),
+      ...(parsed.data.isActive !== undefined ? { isActive: parsed.data.isActive } : {})
+    }
+  });
+  await prisma.auditLog.create({ data: { actorId: admin.id, action: "CONFIGURATION_UPDATED", entityType: type, entityId: id, details: parsed.data } });
+  return NextResponse.json({ id: item.id, name: item.name, description: item.description, isActive: item.isActive });
 }

@@ -29,7 +29,7 @@ const navItems = [
   { href: "/users", label: "User Accounts", icon: Users, roles: ["ADMIN"] },
   { href: "/configuration", label: "Configuration", icon: Settings, roles: ["ADMIN"] },
   { href: "/audit", label: "Audit Log", icon: ScrollText, roles: ["ADMIN"] },
-  { href: "/reports", label: "Reports", icon: FileBarChart2, roles: ["ADMIN"] }
+  { href: "/reports", label: "Reports", icon: FileBarChart2, roles: ["APPLICANT", "ICT_OFFICER", "ADMIN"] }
 ] as const;
 
 type ShellProfile = { fullName: string; role: "APPLICANT" | "HOD" | "ICT_OFFICER" | "ADMIN" } | null;
@@ -56,53 +56,24 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
   }
 
   if (!mounted) {
-    return <div className="min-h-screen pl-16 text-slate-900 lg:pl-0">
-      <main className="space-y-6 p-4 sm:p-6 lg:p-8 xl:p-10">{children}</main>
+    return <div className="min-h-screen text-slate-900">
+      <main className="space-y-6 px-4 py-5 sm:p-6 lg:p-8 xl:p-10">{children}</main>
     </div>;
   }
 
   return (
-    <div className="min-h-screen text-slate-900">
+    <div className="min-h-screen overflow-x-hidden text-slate-900">
       <div className="hidden h-1.5 bg-[linear-gradient(90deg,#1eb4e9_0_25%,#000_25%_37.5%,#fcd116_37.5%_62.5%,#000_62.5%_75%,#006b3f_75%)] lg:block" />
-      <aside className="fixed inset-y-0 left-0 z-40 flex w-16 flex-col border-r border-slate-800 bg-brand-ink text-white shadow-xl lg:hidden">
-        <div className="h-1.5 bg-[linear-gradient(180deg,#1eb4e9_0_25%,#000_25%_37.5%,#fcd116_37.5%_62.5%,#000_62.5%_75%,#006b3f_75%)]" />
-        <button
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          className="mx-auto mt-4 grid h-11 w-11 place-items-center rounded-lg border border-white/15 bg-white/[0.06] text-white"
-          aria-label="Open navigation menu"
-          aria-expanded={mobileOpen}
-        >
-          <Menu className="h-5 w-5" />
-        </button>
-        <div className="mx-auto mt-5 grid h-10 w-10 place-items-center rounded-lg bg-brand-government text-white">
-          <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-        </div>
-        <div className="mt-auto border-t border-white/15 p-2">
-          <button
-            type="button"
-            onClick={async () => {
-              await createClient().auth.signOut();
-              router.replace("/login");
-              router.refresh();
-            }}
-            className="grid h-11 w-11 place-items-center rounded-lg text-white/70 hover:bg-white/[0.07] hover:text-white"
-            aria-label="Sign out"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
-        </div>
-      </aside>
 
       <header className="sticky top-0 z-30 hidden border-b border-slate-200/90 bg-white/95 backdrop-blur-md lg:block">
         <div className="mx-auto flex min-h-[76px] max-w-[1600px] items-center justify-between gap-4 px-4 py-3 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-emerald-800 bg-brand-government text-white shadow-sm">
-              <ShieldCheck className="h-6 w-6" aria-hidden="true" />
+            <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <img src="/branding/HalmashauriYaChalinze.png" alt="" className="h-11 w-11 object-contain" />
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand-government sm:text-[11px]">
-                The United Republic of Tanzania
+                Chalinze District Council
               </p>
               <p className="mt-0.5 max-w-2xl font-serif text-xs font-bold uppercase leading-snug text-brand-ink sm:text-sm lg:text-base">
                 President&apos;s Office - Regional Administration and Local Government
@@ -110,6 +81,7 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <img src="/branding/HalmashauriYaChalinze.png" alt="" className="hidden h-12 w-12 object-contain xl:block" />
             <div className="hidden items-center gap-3 border-l border-slate-200 pl-4 md:flex">
               <div className="grid h-9 w-9 place-items-center rounded-full bg-brand-ink text-white">
                 <UserRound className="h-4 w-4" />
@@ -123,41 +95,68 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
         </div>
       </header>
 
-      {mobileOpen ? (
-        <div className="fixed inset-y-0 left-16 right-0 z-50 lg:hidden">
-          <button className="absolute inset-0 bg-brand-ink/55 backdrop-blur-sm" onClick={() => setMobileOpen(false)} aria-label="Close navigation menu" />
-          <aside className="mobile-drawer relative flex h-full w-[min(calc(100vw-4rem),340px)] flex-col bg-brand-ink p-5 text-white shadow-2xl">
-            <div className="mb-5 flex items-center justify-between border-b border-white/15 pb-5">
-              <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand-gold">Official Portal</p><p className="mt-1 font-serif font-bold">Access Management</p></div>
-              <button onClick={() => setMobileOpen(false)} className="grid h-10 w-10 place-items-center rounded-lg border border-white/20" aria-label="Close navigation menu"><X className="h-5 w-5" /></button>
-            </div>
-            <Navigation pathname={pathname} profile={profile} onNavigate={() => setMobileOpen(false)} />
-            <AccountSummary profile={profile} />
-            <SignOutButton router={router} />
-          </aside>
-        </div>
-      ) : null}
-
-      <div className="mx-auto grid min-h-screen max-w-[1600px] pl-16 lg:min-h-[calc(100vh-83px)] lg:grid-cols-[268px_1fr] lg:pl-0">
-        <aside className="sticky top-[76px] hidden h-[calc(100vh-76px)] flex-col border-r border-slate-800 bg-brand-ink px-4 py-6 text-white lg:flex">
+      <div className="mx-auto grid min-h-screen max-w-[1600px] grid-cols-[64px_minmax(0,1fr)] items-stretch lg:min-h-[calc(100vh-83px)] lg:grid-cols-[268px_minmax(0,1fr)]">
+        <aside className="flex min-h-full self-stretch flex-col border-r border-slate-800 bg-brand-ink text-white shadow-xl lg:hidden">
+          <div className="h-1.5 bg-[linear-gradient(180deg,#1eb4e9_0_25%,#000_25%_37.5%,#fcd116_37.5%_62.5%,#000_62.5%_75%,#006b3f_75%)]" />
+          <button
+            type="button"
+            onClick={() => setMobileOpen((current) => !current)}
+            className="mx-auto mt-4 grid h-11 w-11 place-items-center rounded-lg border border-white/15 bg-white/[0.06] text-white"
+            aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={mobileOpen}
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+          <div className="mx-auto mt-5 grid h-10 w-10 place-items-center overflow-hidden rounded-lg bg-white">
+            <img src="/branding/HalmashauriYaChalinze.png" alt="" className="h-9 w-9 object-contain" />
+          </div>
+          <div className="mt-auto border-t border-white/15 p-2">
+            <button
+              type="button"
+              onClick={async () => {
+                await createClient().auth.signOut();
+                router.replace("/login");
+                router.refresh();
+              }}
+              className="grid h-11 w-11 place-items-center rounded-lg text-white/80 hover:bg-white/[0.07] hover:text-white"
+              aria-label="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        </aside>
+        <aside className="hidden min-h-full self-stretch flex-col border-r border-slate-800 bg-brand-ink px-4 py-6 text-white lg:flex">
           <div className="mb-6 border-b border-white/15 px-3 pb-5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-gold">Official Government Portal</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-gold">Chalinze District Council</p>
             <h1 className="mt-2 text-lg font-semibold leading-snug">User Access Management System</h1>
           </div>
           <Navigation pathname={pathname} profile={profile} />
           <div className="mt-auto">
             <div className="rounded-xl border border-white/15 bg-white/[0.06] p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold"><ShieldCheck className="h-4 w-4 text-brand-gold" />Audited Workspace</div>
+              <div className="flex items-center gap-2 text-sm font-semibold"><img src="/branding/HalmashauriYaChalinze.png" alt="" className="h-5 w-5 object-contain" />Audited Workspace</div>
               <p className="mt-2 text-xs leading-5 text-white/65">Requests, decisions, and account changes are attributable and retained for oversight.</p>
             </div>
             <SignOutButton router={router} />
           </div>
         </aside>
 
-        <div className="min-w-0">
+        <div className="relative min-w-0">
+          {mobileOpen ? (
+            <div className="absolute inset-y-0 left-0 z-40 flex w-[min(100%,320px)] flex-col bg-brand-ink p-5 text-white shadow-2xl lg:hidden">
+              <div className="mb-5 border-b border-white/15 pb-5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand-gold">Chalinze District Council</p>
+                <p className="mt-1 font-serif font-bold">Access Management</p>
+              </div>
+              <Navigation pathname={pathname} profile={profile} onNavigate={() => setMobileOpen(false)} />
+              <div className="mt-auto border-t border-white/15 pt-4">
+                <AccountSummary profile={profile} />
+                <SignOutButton router={router} />
+              </div>
+            </div>
+          ) : null}
           <main className="space-y-6 p-4 sm:p-6 lg:p-8 xl:p-10">{children}</main>
           <footer className="border-t border-slate-200 bg-white/75 px-8 py-5 text-center text-xs leading-5 text-slate-500">
-            Government User Access Management System &copy; 2026. Authorized use only. All access and actions are subject to audit.
+            Chalinze District Council User Access Management System &copy; 2026. Help desk: 0678049280 | support@amis.got.tz
           </footer>
         </div>
       </div>
@@ -177,7 +176,7 @@ function Navigation({ pathname, profile, onNavigate }: { pathname: string; profi
 }
 
 function AccountSummary({ profile }: { profile: ShellProfile }) {
-  return <div className="mt-auto border-t border-white/15 pt-5"><p className="text-sm font-semibold">{profile?.fullName ?? "Authorized User"}</p><p className="mt-1 text-xs text-white/60">{profile ? roleLabels[profile.role] : "User"}</p></div>;
+  return <div className="border-white/15"><p className="truncate text-sm font-semibold">{profile?.fullName ?? "Authorized User"}</p><p className="mt-1 text-xs text-white/60">{profile ? roleLabels[profile.role] : "User"}</p></div>;
 }
 
 function SignOutButton({ router }: { router: ReturnType<typeof useRouter> }) {

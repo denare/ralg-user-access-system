@@ -17,6 +17,7 @@
 body {
   margin: 0;
   min-width: 320px;
+  overflow-x: hidden;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: var(--civic-ink);
   background-color: var(--civic-paper);
@@ -101,6 +102,11 @@ textarea {
       transform: translateX(-100%);
     }
   }
+
+  .table-scroll {
+    @apply w-full max-w-full overflow-x-auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -133,5 +139,25 @@ a[href]:active {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+@media print {
+  body {
+    background: white;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+
+  aside,
+  header,
+  footer {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
   }
 }

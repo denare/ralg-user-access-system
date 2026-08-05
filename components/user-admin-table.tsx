@@ -40,9 +40,9 @@ export function UserAdminTable({ users }: { users: ManagedUser[] }) {
   }
 
   return (
-    <div className="overflow-x-auto border border-slate-200 bg-white shadow-card">
+    <div className="table-scroll border border-slate-200 bg-white shadow-card">
       {error ? <p className="border-b border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p> : null}
-      <table className="min-w-full divide-y divide-slate-200 text-sm">
+      <table className="min-w-[900px] divide-y divide-slate-200 text-sm">
         <thead className="bg-brand-ink text-left text-white">
           <tr>
             <th className="px-5 py-4">Officer</th>
@@ -71,14 +71,19 @@ export function UserAdminTable({ users }: { users: ManagedUser[] }) {
                 </select>
               </td>
               <td className="px-5 py-4">
-                <button
-                  type="button"
-                  disabled={savingId === user.id}
-                  onClick={() => void updateUser(user.id, { isActive: !user.isActive })}
-                  className={`rounded-sm px-3 py-2 text-xs font-semibold ${user.isActive ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"}`}
-                >
-                  {savingId === user.id ? "Updating..." : user.isActive ? "Active" : "Inactive"}
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`rounded-sm px-3 py-2 text-xs font-semibold ${user.isActive ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-700"}`}>
+                    {user.isActive ? "Active" : "Inactive"}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={savingId === user.id}
+                    onClick={() => void updateUser(user.id, { isActive: !user.isActive })}
+                    className="button-secondary min-h-0 px-3 py-2 text-xs"
+                  >
+                    {savingId === user.id ? "Updating..." : user.isActive ? "Deactivate" : "Activate"}
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
