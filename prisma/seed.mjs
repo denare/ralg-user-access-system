@@ -13,12 +13,20 @@ const supabase = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-// Development-only credentials. Replace these accounts before operational deployment.
+function requiredSeedPassword(name) {
+  const value = process.env[name];
+  if (!value || !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,72}$/.test(value)) {
+    throw new Error(`${name} must be set to a 12-72 character password containing uppercase, lowercase, and a number.`);
+  }
+  return value;
+}
+
+// Demonstration-only credentials. Never use these accounts for operational deployment.
 const initialPasswords = {
-  applicant: process.env.SEED_APPLICANT_PASSWORD ?? process.env.SEED_EMPLOYEE_PASSWORD ?? "applicant@123",
-  hod: process.env.SEED_HOD_PASSWORD ?? "hod@123",
-  ict: process.env.SEED_ICT_PASSWORD ?? "ict@123",
-  admin: process.env.SEED_ADMIN_PASSWORD ?? "admin@123"
+  applicant: requiredSeedPassword("SEED_APPLICANT_PASSWORD"),
+  hod: requiredSeedPassword("SEED_HOD_PASSWORD"),
+  ict: requiredSeedPassword("SEED_ICT_PASSWORD"),
+  admin: requiredSeedPassword("SEED_ADMIN_PASSWORD")
 };
 
 const accounts = [

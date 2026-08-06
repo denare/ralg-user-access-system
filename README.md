@@ -43,14 +43,16 @@ Runtime traffic uses Supavisor transaction mode on port `6543` with one Prisma c
 
 ## Demonstration Accounts
 
+Demo users are optional and must only be created in an approved non-production environment. Set strong private seed passwords before running `npm run db:seed`.
+
 ```text
-Applicant: applicant.demo@tamisemi.go.tz / applicant@123
-HOD:       hod.demo@tamisemi.go.tz       / hod@123
-ICT:       ict.demo@tamisemi.go.tz       / ict@123
-Admin:     admin.demo@tamisemi.go.tz     / admin@123
+Applicant: applicant.demo@tamisemi.go.tz / SEED_APPLICANT_PASSWORD
+HOD:       hod.demo@tamisemi.go.tz       / SEED_HOD_PASSWORD
+ICT:       ict.demo@tamisemi.go.tz       / SEED_ICT_PASSWORD
+Admin:     admin.demo@tamisemi.go.tz     / SEED_ADMIN_PASSWORD
 ```
 
-These are demonstration credentials. They must be removed or rotated before onboarding real users.
+Never use demonstration accounts or shared seed passwords for operational users.
 
 ## Verification
 

@@ -4,13 +4,24 @@ import { prisma } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 import { applicantSignupSchema } from "@/lib/validation";
 import { isDatabaseUnavailable, withDatabaseRetry } from "@/lib/database-retry";
+import { mutationGuard } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const limited = mutationGuard(request, { key: "signup", limit: 5, windowMs: 15 * 60 * 1000 });
+  if (limited) return limited;
+
   const supabase = await createClient();
   const { data: current } = await supabase.auth.getUser();
   if (current.user) return NextResponse.json({ error: "Sign out before creating another account." }, { status: 409 });
 
-  const parsed = applicantSignupSchema.safeParse(await request.json());
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "The submitted registration is not valid JSON." }, { status: 400 });
+  }
+
+  const parsed = applicantSignupSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({
       error: "Please correct the fields marked below.",

@@ -3,11 +3,18 @@ import { createClient } from "@supabase/supabase-js";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
+
+function requiredPassword(name) {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} is required to verify demonstration accounts.`);
+  return value;
+}
+
 const accounts = [
-  ["applicant.demo@tamisemi.go.tz", "applicant@123", "APPLICANT"],
-  ["hod.demo@tamisemi.go.tz", "hod@123", "HOD"],
-  ["ict.demo@tamisemi.go.tz", "ict@123", "ICT_OFFICER"],
-  ["admin.demo@tamisemi.go.tz", "admin@123", "ADMIN"]
+  ["applicant.demo@tamisemi.go.tz", requiredPassword("SEED_APPLICANT_PASSWORD"), "APPLICANT"],
+  ["hod.demo@tamisemi.go.tz", requiredPassword("SEED_HOD_PASSWORD"), "HOD"],
+  ["ict.demo@tamisemi.go.tz", requiredPassword("SEED_ICT_PASSWORD"), "ICT_OFFICER"],
+  ["admin.demo@tamisemi.go.tz", requiredPassword("SEED_ADMIN_PASSWORD"), "ADMIN"]
 ];
 
 async function retry(operation, attempts = 3) {

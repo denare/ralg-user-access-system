@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth";
 import { getRequestReportData } from "@/lib/request-report-data";
 import { renderRequestReportPdf } from "@/lib/request-report-pdf";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,9 @@ function safeFilename(value: string) {
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const limited = rateLimit(_request, { key: "requests:pdf", limit: 40, windowMs: 10 * 60 * 1000 });
+    if (limited) return limited;
+
     const profile = await getCurrentProfile();
     if (!profile || !profile.isActive) {
       return NextResponse.json({ error: "Your session has expired. Sign in again before downloading the report." }, { status: 401 });
