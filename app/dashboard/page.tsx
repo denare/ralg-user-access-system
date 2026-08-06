@@ -39,16 +39,16 @@ export default async function DashboardPage() {
         ))}
       </section>
 
-      <section className={profile.role === "ADMIN" ? "grid gap-6 xl:grid-cols-[1.35fr_0.65fr]" : "grid gap-6"}>
-        <div className="border border-slate-200 bg-white p-5 shadow-card sm:p-6">
-          <div className="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
-            <div>
+      <section className={profile.role === "ADMIN" ? "grid min-w-0 gap-6 2xl:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]" : "grid min-w-0 gap-6"}>
+        <div className="min-w-0 border border-slate-200 bg-white p-4 shadow-card sm:p-6">
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <h3 className="text-xl font-bold text-brand-ink">Current Request Register</h3>
               <p className="mt-1 text-sm text-slate-600">
                 Requests awaiting departmental or ICT action, with recorded timestamps and decisions.
               </p>
             </div>
-            <Link href="/requests" className="text-sm font-semibold text-brand-government hover:underline">
+            <Link href="/requests" className="w-fit shrink-0 text-sm font-semibold text-brand-government hover:underline">
               View full register
             </Link>
           </div>
@@ -57,8 +57,8 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {profile.role === "ADMIN" ? <div className="space-y-6">
-          <section className="border border-slate-200 bg-white p-6 shadow-card">
+        {profile.role === "ADMIN" ? <div className="min-w-0 space-y-6">
+          <section className="min-w-0 border border-slate-200 bg-white p-4 shadow-card sm:p-6">
             <h3 className="border-b border-slate-200 pb-3 text-lg font-bold text-brand-ink">Control Objectives</h3>
             <div className="mt-4 space-y-4">
               <ControlItem
@@ -79,9 +79,9 @@ export default async function DashboardPage() {
             </div>
           </section>
 
-          <section className="border border-slate-200 bg-white p-6 shadow-card">
+          <section className="min-w-0 border border-slate-200 bg-white p-4 shadow-card sm:p-6">
             <h3 className="border-b border-slate-200 pb-3 text-lg font-bold text-brand-ink">Monthly Summary</h3>
-            <div className="mt-4 grid gap-3">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 2xl:grid-cols-1">
               {reportCards.map((report) => (
                 <ReportCard key={report.title} report={report} />
               ))}
@@ -96,9 +96,9 @@ export default async function DashboardPage() {
 function ControlItem({ icon, title, description }: { icon: ReactNode; title: string; description: string }) {
   return (
     <div className="rounded-r-lg border-l-2 border-brand-government bg-slate-50/70 px-4 py-3">
-      <div className="flex items-center gap-3 text-brand-government">
-        {icon}
-        <h4 className="font-semibold text-brand-ink">{title}</h4>
+      <div className="flex items-start gap-3 text-brand-government">
+        <span className="mt-0.5 shrink-0">{icon}</span>
+        <h4 className="min-w-0 font-semibold text-brand-ink">{title}</h4>
       </div>
       <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
     </div>

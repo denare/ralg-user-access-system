@@ -19,7 +19,7 @@ export function DownloadPdfButton({
   const className = variant === "primary"
     ? "button-primary"
     : variant === "compact"
-      ? "button-secondary min-h-0 px-3 py-2 text-xs"
+      ? "button-secondary min-h-0 w-full px-3 py-2 text-xs sm:w-auto"
       : "button-secondary";
 
   async function downloadReport() {

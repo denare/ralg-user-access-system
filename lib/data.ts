@@ -50,6 +50,47 @@ const decisionLabels: Record<Decision, "Approved" | "Rejected"> = {
   REJECT: "Rejected"
 };
 
+const departmentAliases: Record<string, string[]> = {
+  accounts: ["Accounts", "Finance", "Finance and Accounts", "Finance Department"],
+  finance: ["Finance", "Accounts", "Finance and Accounts", "Finance Department"],
+  "finance and accounts": ["Finance and Accounts", "Finance", "Accounts", "Finance Department"],
+  ict: ["ICT", "IT", "Information Technology", "Information and Communication Technology", "Information Communication Technology"],
+  "information technology": ["Information Technology", "ICT", "IT", "Information and Communication Technology"],
+  "information and communication technology": ["Information and Communication Technology", "Information Communication Technology", "ICT", "IT"],
+  planning: ["Planning", "Planning Department"],
+  administration: ["Administration", "Administration Department", "Admin"],
+  procurement: ["Procurement", "Procurement Management Unit", "PMU"],
+  health: ["Health", "Health Department"],
+  education: ["Education", "Education Department"],
+  works: ["Works", "Works Department"],
+  agriculture: ["Agriculture", "Agriculture Department"]
+};
+
+function normalizeDepartment(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/\s+/g, " ");
+}
+
+function departmentScope(profile: User) {
+  const department = profile.department?.trim();
+  if (!department) return ["__unassigned__"];
+
+  const normalized = normalizeDepartment(department);
+  const aliases = departmentAliases[normalized] ?? [];
+  return Array.from(new Set([department, ...aliases])).filter(Boolean);
+}
+
+function departmentWhere(profile: User): Prisma.AccessRequestWhereInput {
+  return {
+    OR: departmentScope(profile).map((department) => ({
+      department: { equals: department, mode: "insensitive" }
+    }))
+  };
+}
+
 function currentOwner(status: RequestStatus): UserRole {
   if (status === "DRAFT") return "Employee (Applicant)";
   if (status === "PENDING_HOD") return "Head of Department";
@@ -106,7 +147,9 @@ export function toAccessRequest(request: RequestWithRelations): AccessRequest {
 
 function visibilityWhere(profile: User): Prisma.AccessRequestWhereInput {
   if (profile.role === "APPLICANT") return { applicantId: profile.id };
-  if (profile.role === "HOD") return { department: profile.department ?? "__unassigned__", status: { not: "DRAFT" } };
+  if (profile.role === "HOD") {
+    return { AND: [departmentWhere(profile), { status: { not: "DRAFT" } }] };
+  }
   if (profile.role === "ICT_OFFICER") {
     return { OR: [
       { status: { in: ["PENDING_ICT", "APPROVED", "COMPLETED"] } },
@@ -136,7 +179,7 @@ export async function getVisibleRequest(profile: User, id: string) {
 export async function getApprovalQueue(profile: User) {
   const where: Prisma.AccessRequestWhereInput =
     profile.role === "HOD"
-      ? { status: "PENDING_HOD", department: profile.department ?? "__unassigned__" }
+      ? { AND: [{ status: "PENDING_HOD" }, departmentWhere(profile)] }
       : profile.role === "ICT_OFFICER"
         ? { status: "PENDING_ICT" }
         : { id: "__not_authorized__" };

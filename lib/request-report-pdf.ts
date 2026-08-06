@@ -32,8 +32,7 @@ function imagePath(file: string) {
 function imageBuffer(file: string) {
   const source = imagePath(file);
   if (!fs.existsSync(source)) return null;
-  const image = fs.readFileSync(source);
-  return image.buffer.slice(image.byteOffset, image.byteOffset + image.byteLength);
+  return fs.readFileSync(source);
 }
 
 function drawHeader(doc: PDFKit.PDFDocument, report: RequestReportData) {
@@ -181,7 +180,7 @@ function systemsSection(doc: PDFKit.PDFDocument, report: RequestReportData) {
       .font("Helvetica")
       .fontSize(10)
       .fillColor("#0f172a")
-      .text(`✓ ${system}`, margins.left + 8, doc.y, { width: contentWidth - 16 });
+      .text(`- ${system}`, margins.left + 8, doc.y, { width: contentWidth - 16 });
     doc.moveDown(0.2);
   }
   doc.moveDown(0.5);
@@ -222,7 +221,7 @@ function timelineSection(doc: PDFKit.PDFDocument, report: RequestReportData) {
       doc.moveDown(0.2).fontSize(8).text(item.details, margins.left + 20, doc.y, { width: contentWidth - 20 });
     }
     if (index < report.request.timeline.length - 1) {
-      doc.moveDown(0.2).fillColor("#64748b").text("↓", margins.left + 20, doc.y, { width: 20 });
+      doc.moveDown(0.2).fillColor("#64748b").text("|", margins.left + 20, doc.y, { width: 20 });
     }
     doc.moveDown(0.4);
   }

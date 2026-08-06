@@ -23,14 +23,14 @@ export default async function ReportsPage() {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {reportCards.map((report) => <ReportCard key={report.title} report={report} />)}
       </section>
-      <section className="border border-slate-200 bg-white p-6 shadow-card">
+      <section className="min-w-0 border border-slate-200 bg-white p-4 shadow-card sm:p-6">
         <h3 className="border-b border-slate-200 pb-3 text-xl font-semibold text-brand-ink">Recent Completed Requests</h3>
         <div className="mt-5 grid gap-3">
           {completed.slice(0, 10).map((request) => (
-            <div key={request.id} className="flex flex-col gap-3 border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
+            <div key={request.id} className="flex min-w-0 flex-col gap-3 border border-slate-200 bg-slate-50 p-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0">
                 <p className="font-semibold text-brand-ink">{request.requestNumber}</p>
-                <p className="mt-1 text-sm text-slate-600">{request.applicantName} | {request.action} | {request.systems.join(", ")}</p>
+                <p className="mt-1 break-words text-sm text-slate-600">{request.applicantName} | {request.action} | {request.systems.join(", ")}</p>
               </div>
               <DownloadPdfButton requestId={request.id} variant="compact" />
             </div>
@@ -38,22 +38,22 @@ export default async function ReportsPage() {
           {!completed.length ? <p className="text-sm text-slate-600">No completed requests have been recorded.</p> : null}
         </div>
       </section>
-      <section className="border border-slate-200 bg-white p-6 shadow-card">
+      <section className="min-w-0 border border-slate-200 bg-white p-4 shadow-card sm:p-6">
         <h3 className="border-b border-slate-200 pb-3 text-xl font-semibold text-brand-ink">Detailed Request Report</h3>
         <div className="mt-5 space-y-4">
           {requests.map((request) => (
-            <article key={request.id} className="border border-slate-200 bg-slate-50 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
-                <div>
+            <article key={request.id} className="min-w-0 border border-slate-200 bg-slate-50 p-4">
+              <div className="flex flex-col gap-3 border-b border-slate-200 pb-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="min-w-0">
                   <p className="font-semibold text-brand-ink">{request.requestNumber}</p>
-                  <p className="mt-1 text-sm text-slate-600">{request.applicantName} | {request.action} | {request.status}</p>
+                  <p className="mt-1 break-words text-sm text-slate-600">{request.applicantName} | {request.action} | {request.status}</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <p className="text-xs text-slate-500">Updated {formatDate(request.updatedAt)}</p>
                   <DownloadPdfButton requestId={request.id} variant="compact" />
                 </div>
               </div>
-              <dl className="mt-4 grid gap-3 md:grid-cols-2">
+              <dl className="mt-4 grid gap-3 sm:grid-cols-2">
                 <Detail label="Region" value={request.region} />
                 <Detail label="LGA" value={request.lga} />
                 <Detail label="Facility" value={request.facility} />
