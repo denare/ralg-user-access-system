@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getVisibleRequests } from "@/lib/data";
 import { requestSchema } from "@/lib/validation";
 import { isDatabaseUnavailable, withDatabaseRetry } from "@/lib/database-retry";
+import { mutationGuard, rateLimit } from "@/lib/rate-limit";
 
 const actions: Record<string, RequestAction> = {
   "Create User": "CREATE_USER",
@@ -18,7 +19,10 @@ const environments: Record<string, OperatingEnvironment> = {
   Testing: "TESTING"
 };
 
-export async function GET() {
+export async function GET(request: Request) {
+  const limited = rateLimit(request, { key: "requests:list", limit: 120, windowMs: 10 * 60 * 1000 });
+  if (limited) return limited;
+
   const profile = await getCurrentProfile();
   if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -27,6 +31,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const limited = mutationGuard(request, { key: "requests:submit", limit: 20, windowMs: 10 * 60 * 1000 });
+  if (limited) return limited;
+
   try {
     const profile = await getCurrentProfile();
     if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

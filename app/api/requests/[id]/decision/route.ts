@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentProfile } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { sameDepartment } from "@/lib/department-scope";
+import { mutationGuard } from "@/lib/rate-limit";
 
 const decisionSchema = z.object({
   decision: z.enum(["approve", "reject"]),
@@ -10,12 +12,22 @@ const decisionSchema = z.object({
 });
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const limited = mutationGuard(request, { key: "requests:decision", limit: 60, windowMs: 10 * 60 * 1000 });
+  if (limited) return limited;
+
   const profile = await getCurrentProfile();
   if (!profile || !["HOD", "ICT_OFFICER"].includes(profile.role)) {
     return NextResponse.json({ error: "Approval access required." }, { status: 403 });
   }
 
-  const parsed = decisionSchema.safeParse(await request.json());
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "The submitted decision is not valid JSON." }, { status: 400 });
+  }
+
+  const parsed = decisionSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "A decision and comment are required." }, { status: 400 });
   }
@@ -24,7 +36,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const item = await prisma.accessRequest.findUnique({ where: { id } });
   if (!item) return NextResponse.json({ error: "Request not found." }, { status: 404 });
 
-  const isHodStep = profile.role === "HOD" && item.status === "PENDING_HOD" && item.department === profile.department;
+  const isHodStep = profile.role === "HOD" && item.status === "PENDING_HOD" && sameDepartment(item.department, profile.department);
   const isIctStep = profile.role === "ICT_OFFICER" && item.status === "PENDING_ICT";
   if (!isHodStep && !isIctStep) {
     return NextResponse.json({ error: "This request is not assigned to your approval stage." }, { status: 409 });

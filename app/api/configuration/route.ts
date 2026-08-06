@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentProfile } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { mutationGuard } from "@/lib/rate-limit";
 
 const createSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("department"), name: z.string().trim().min(2).max(120), code: z.string().trim().toUpperCase().min(2).max(20) }),
@@ -30,9 +31,19 @@ async function administrator() {
 }
 
 export async function POST(request: Request) {
+  const limited = mutationGuard(request, { key: "configuration:write", limit: 60, windowMs: 10 * 60 * 1000 });
+  if (limited) return limited;
+
   const admin = await administrator();
   if (!admin) return NextResponse.json({ error: "System administrator access required." }, { status: 403 });
-  const parsed = createSchema.safeParse(await request.json());
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "The submitted configuration is not valid JSON." }, { status: 400 });
+  }
+
+  const parsed = createSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid configuration information." }, { status: 400 });
 
   const item = parsed.data.type === "department"
@@ -43,9 +54,19 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const limited = mutationGuard(request, { key: "configuration:write", limit: 60, windowMs: 10 * 60 * 1000 });
+  if (limited) return limited;
+
   const admin = await administrator();
   if (!admin) return NextResponse.json({ error: "System administrator access required." }, { status: 403 });
-  const parsed = updateSchema.safeParse(await request.json());
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "The submitted configuration update is not valid JSON." }, { status: 400 });
+  }
+
+  const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid configuration update." }, { status: 400 });
   const { type, id } = parsed.data;
 

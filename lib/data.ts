@@ -8,6 +8,7 @@ import {
   UserRole as DbUserRole
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { departmentScope } from "@/lib/department-scope";
 import type { AccessRequest, DashboardStat, ReportCard, UserRole } from "@/lib/types";
 
 const requestInclude = {
@@ -49,6 +50,14 @@ const decisionLabels: Record<Decision, "Approved" | "Rejected"> = {
   APPROVE: "Approved",
   REJECT: "Rejected"
 };
+
+function departmentWhere(profile: User): Prisma.AccessRequestWhereInput {
+  return {
+    OR: departmentScope(profile.department).map((department) => ({
+      department: { equals: department, mode: "insensitive" }
+    }))
+  };
+}
 
 function currentOwner(status: RequestStatus): UserRole {
   if (status === "DRAFT") return "Employee (Applicant)";
@@ -106,7 +115,9 @@ export function toAccessRequest(request: RequestWithRelations): AccessRequest {
 
 function visibilityWhere(profile: User): Prisma.AccessRequestWhereInput {
   if (profile.role === "APPLICANT") return { applicantId: profile.id };
-  if (profile.role === "HOD") return { department: profile.department ?? "__unassigned__", status: { not: "DRAFT" } };
+  if (profile.role === "HOD") {
+    return { AND: [departmentWhere(profile), { status: { not: "DRAFT" } }] };
+  }
   if (profile.role === "ICT_OFFICER") {
     return { OR: [
       { status: { in: ["PENDING_ICT", "APPROVED", "COMPLETED"] } },
@@ -136,7 +147,7 @@ export async function getVisibleRequest(profile: User, id: string) {
 export async function getApprovalQueue(profile: User) {
   const where: Prisma.AccessRequestWhereInput =
     profile.role === "HOD"
-      ? { status: "PENDING_HOD", department: profile.department ?? "__unassigned__" }
+      ? { AND: [{ status: "PENDING_HOD" }, departmentWhere(profile)] }
       : profile.role === "ICT_OFFICER"
         ? { status: "PENDING_ICT" }
         : { id: "__not_authorized__" };

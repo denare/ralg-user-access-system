@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentProfile } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { mutationGuard } from "@/lib/rate-limit";
 
 const updateSchema = z.object({
   role: z.enum(["APPLICANT", "HOD", "ICT_OFFICER", "ADMIN"]).optional(),
@@ -9,12 +10,22 @@ const updateSchema = z.object({
 }).refine((value) => value.role !== undefined || value.isActive !== undefined);
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const limited = mutationGuard(request, { key: "users:update", limit: 60, windowMs: 10 * 60 * 1000 });
+  if (limited) return limited;
+
   const administrator = await getCurrentProfile();
   if (!administrator || administrator.role !== "ADMIN") {
     return NextResponse.json({ error: "System administrator access required." }, { status: 403 });
   }
 
-  const parsed = updateSchema.safeParse(await request.json());
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "The submitted account update is not valid JSON." }, { status: 400 });
+  }
+
+  const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid account update." }, { status: 400 });
 
   const { id } = await params;

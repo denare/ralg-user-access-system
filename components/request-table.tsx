@@ -18,10 +18,10 @@ export function RequestTable({ items }: { items: AccessRequest[] }) {
 
   return (
     <>
-      <div className="grid gap-3 md:hidden">
+      <div className="grid gap-3 xl:hidden">
         {items.map((request) => (
           <article key={request.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-card">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <Link href={`/requests/${request.id}`} className="break-words font-semibold text-brand-ink hover:text-brand-moss">
                   {request.requestNumber}
@@ -29,9 +29,11 @@ export function RequestTable({ items }: { items: AccessRequest[] }) {
                 <p className="mt-1 text-sm font-medium text-slate-800">{request.applicantName}</p>
                 <p className="mt-1 text-xs text-slate-500">{request.region} · {request.facility}</p>
               </div>
-              <StatusPill status={request.status} />
+              <div className="w-fit max-w-full">
+                <StatusPill status={request.status} />
+              </div>
             </div>
-            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
               <div>
                 <dt className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Action</dt>
                 <dd className="mt-1 text-slate-800">{request.action}</dd>
@@ -55,8 +57,8 @@ export function RequestTable({ items }: { items: AccessRequest[] }) {
           </article>
         ))}
       </div>
-      <div className="table-scroll hidden border border-slate-200 bg-white shadow-card md:block">
-        <table className="min-w-[980px] divide-y divide-slate-100 text-sm">
+      <div className="table-scroll hidden border border-slate-200 bg-white shadow-card xl:block">
+        <table className="min-w-[940px] divide-y divide-slate-100 text-sm">
           <thead className="bg-brand-ink">
             <tr className="text-left text-[11px] uppercase tracking-[0.1em] text-white/80">
               <th className="px-5 py-4 font-bold">Request</th>
