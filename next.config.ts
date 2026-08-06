@@ -26,6 +26,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   agentRules: false,
+  poweredByHeader: false,
   experimental: {
     useTypeScriptCli: false
   },
