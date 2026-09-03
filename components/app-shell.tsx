@@ -320,8 +320,17 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
           ) : null}
 
           {/* Middle Scrollable Content Container */}
-          <div className="flex flex-1 flex-col overflow-y-auto min-w-0 bg-slate-50 justify-between">
-            <main className="space-y-6 p-4 sm:p-6 lg:p-8 xl:p-10">{children}</main>
+          <div className="relative flex flex-1 flex-col overflow-y-auto min-w-0 bg-slate-50 justify-between">
+            {/* Draft grid pattern */}
+            <div
+              className="pointer-events-none fixed inset-0 z-0 opacity-[0.03]"
+              style={{
+                backgroundImage:
+                  "linear-gradient(rgba(0,0,0,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,1) 1px, transparent 1px)",
+                backgroundSize: "40px 40px",
+              }}
+            />
+            <main className="relative z-10 space-y-6 p-4 sm:p-6 lg:p-8 xl:p-10">{children}</main>
 
             {/* Footer - Always at Bottom */}
             <footer className="mt-auto border-t border-slate-200 bg-white py-4 px-6 text-center text-xs leading-relaxed text-slate-500 shadow-xs">

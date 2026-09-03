@@ -18,8 +18,6 @@ export function AuthPageShell({
 }) {
   return (
     <main className="h-screen overflow-hidden bg-white">
-      {/* Tanzania flag stripe bar */}
-      <div className="h-2 shrink-0 bg-[linear-gradient(90deg,#1eb4e9_0_25%,#000_25%_37.5%,#fcd116_37.5%_62.5%,#000_62.5%_75%,#006b3f_75%)]" />
 
       <section className="grid h-[calc(100vh-8px)] lg:grid-cols-[minmax(0,0.94fr)_1.06fr]">
         {/* Left: Form panel */}
@@ -52,9 +50,8 @@ export function AuthPageShell({
           </div>
         </section>
 
-        {/* Right: Hero panel */}
         <section className="relative hidden h-full overflow-hidden bg-[#0b2239] text-white lg:block">
-          {/* Background: coat of arms watermark + grid + gradient */}
+          {/* Background: coat of arms watermark + gradient */}
           <div className="absolute inset-0">
             <img src="/branding/HalmashauriYaChalinze.png" alt="" className="h-full w-full object-cover opacity-20" />
             <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(30,136,229,0.9),rgba(0,107,63,0.84))]" />
