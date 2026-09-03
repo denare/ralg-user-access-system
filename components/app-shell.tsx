@@ -334,7 +334,7 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
 
             {/* Footer - Always at Bottom */}
             <footer className="mt-auto border-t border-slate-200 bg-white py-4 px-6 text-center text-xs leading-relaxed text-slate-500 shadow-xs">
-              Chalinze District Council User Access Management System &copy; 2026. Help desk: 0678049280 | support@amis.got.tz
+              Chalinze District Council User Access Management System &copy; 2026. Help desk: 0678049280 | ded@chalinzedc.go.tz
             </footer>
           </div>
         </div>

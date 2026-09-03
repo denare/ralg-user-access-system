@@ -122,22 +122,22 @@ export function AuthPageShell({
 
                 {/* Email */}
                 <a
-                  href="mailto:support@amis.go.tz"
+                  href="mailto:ded@chalinzedc.go.tz"
                   className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-white/20 hover:border-white/40 active:scale-95"
                 >
                   <Mail className="h-4 w-4 shrink-0 text-brand-gold" />
-                  <span>support@amis.go.tz</span>
+                  <span>ded@chalinzedc.go.tz</span>
                 </a>
 
                 {/* Instagram */}
                 <a
-                  href="https://www.instagram.com/chalinzedistrictcouncil"
+                  href="https://www.instagram.com/chalinze_district_council/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-white/20 hover:border-white/40 active:scale-95"
                 >
                   <Instagram className="h-4 w-4 shrink-0 text-brand-gold" />
-                  <span>@chalinze.dc</span>
+                  <span>@chalinze_district_council</span>
                 </a>
               </div>
             </div>
