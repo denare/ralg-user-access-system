@@ -8,7 +8,7 @@ import { mutationGuard } from "@/lib/rate-limit";
 
 const decisionSchema = z.object({
   decision: z.enum(["approve", "reject"]),
-  comment: z.string().trim().min(3).max(1000)
+  comment: z.string().trim().min(10, "A minimum 10-character rationale comment is required.").max(1000)
 });
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -29,7 +29,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const parsed = decisionSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "A decision and comment are required." }, { status: 400 });
+    const errorMsg = parsed.error.issues[0]?.message ?? "A decision and valid comment (at least 10 characters) are required.";
+    return NextResponse.json({ error: errorMsg }, { status: 400 });
   }
 
   const { id } = await params;
@@ -39,36 +40,47 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const isHodStep = profile.role === "HOD" && item.status === "PENDING_HOD" && sameDepartment(item.department, profile.department);
   const isIctStep = profile.role === "ICT_OFFICER" && item.status === "PENDING_ICT";
   if (!isHodStep && !isIctStep) {
-    return NextResponse.json({ error: "This request is not assigned to your approval stage." }, { status: 409 });
+    return NextResponse.json({ error: "This request is not assigned to your approval stage or has already been decided." }, { status: 409 });
   }
 
   const approved = parsed.data.decision === "approve";
   const decision: Decision = approved ? "APPROVE" : "REJECT";
   const nextStatus = !approved ? "REJECTED" : isHodStep ? "PENDING_ICT" : "COMPLETED";
 
-  await prisma.$transaction([
-    prisma.approval.create({
-      data: {
-        requestId: item.id,
-        approverId: profile.id,
-        approverRole: profile.role,
-        decision,
-        comment: parsed.data.comment
-      }
-    }),
-    prisma.accessRequest.update({
-      where: { id: item.id },
-      data: {
-        status: nextStatus,
-        hodComment: isHodStep ? parsed.data.comment : item.hodComment,
-        ictComment: isIctStep ? parsed.data.comment : item.ictComment,
-        completedAt: nextStatus === "COMPLETED" ? new Date() : null
-      }
-    }),
-    prisma.auditLog.create({
-      data: { actorId: profile.id, action: approved ? (isIctStep ? "REQUEST_COMPLETED" : "REQUEST_APPROVED") : "REQUEST_REJECTED", entityType: "AccessRequest", entityId: item.id, details: { stage: profile.role } }
-    })
-  ]);
+  try {
+    await prisma.$transaction([
+      prisma.approval.create({
+        data: {
+          requestId: item.id,
+          approverId: profile.id,
+          approverRole: profile.role,
+          decision,
+          comment: parsed.data.comment
+        }
+      }),
+      prisma.accessRequest.update({
+        where: { id: item.id },
+        data: {
+          status: nextStatus,
+          hodComment: isHodStep ? parsed.data.comment : item.hodComment,
+          ictComment: isIctStep ? parsed.data.comment : item.ictComment,
+          completedAt: nextStatus === "COMPLETED" ? new Date() : null
+        }
+      }),
+      prisma.auditLog.create({
+        data: {
+          actorId: profile.id,
+          action: approved ? (isIctStep ? "REQUEST_COMPLETED" : "REQUEST_APPROVED") : "REQUEST_REJECTED",
+          entityType: "AccessRequest",
+          entityId: item.id,
+          details: { stage: profile.role }
+        }
+      })
+    ]);
+  } catch (error) {
+    console.error("Decision transaction failed:", error);
+    return NextResponse.json({ error: "A decision has already been recorded for this approval stage by another reviewer." }, { status: 409 });
+  }
 
   return NextResponse.json({ status: nextStatus });
 }

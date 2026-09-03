@@ -1,6 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
-import PDFDocument from "pdfkit/js/pdfkit.standalone";
+import crypto from "node:crypto";
+// Use standalone PDFKit build to avoid Next.js Webpack ENOENT errors on Helvetica.afm
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const PDFDocument = require("pdfkit/js/pdfkit.standalone");
 import type { RequestReportApproval, RequestReportData } from "@/lib/request-report-data";
 
 const margins = { top: 48, bottom: 48, left: 48, right: 48 };
@@ -8,7 +11,7 @@ const pageWidth = 595.28;
 const pageHeight = 841.89;
 const contentWidth = pageWidth - margins.left - margins.right;
 const headerHeight = 118;
-const footerText = "This is a computer-generated report from the Chalinze District Council User Access Management System.";
+const footerText = "This is an official computer-generated report from the Chalinze District Council User Access Management System.";
 
 function value(input: string | null | undefined) {
   return input?.trim() || "Not recorded";
@@ -29,14 +32,15 @@ function imagePath(file: string) {
   return path.join(process.cwd(), "public", "branding", file);
 }
 
-function imageBuffer(file: string) {
+function imageDataUrl(file: string) {
   const source = imagePath(file);
   if (!fs.existsSync(source)) return null;
-  return fs.readFileSync(source);
+  const buf = fs.readFileSync(source);
+  return `data:image/png;base64,${buf.toString("base64")}`;
 }
 
 function drawHeader(doc: PDFKit.PDFDocument, report: RequestReportData) {
-  const council = imageBuffer("HalmashauriYaChalinze.png");
+  const council = imageDataUrl("HalmashauriYaChalinze.png");
 
   doc.save();
   doc.rect(0, 0, pageWidth, headerHeight).fill("#f8fafc");
@@ -70,31 +74,29 @@ function drawHeader(doc: PDFKit.PDFDocument, report: RequestReportData) {
     .text(`Report Date: ${formatDate(report.generatedAt)}`, margins.left, 101, { width: contentWidth });
 }
 
-function drawFooter(doc: PDFKit.PDFDocument) {
+function drawFooter(doc: PDFKit.PDFDocument, currentPage: number, totalPages: number) {
   const previousY = doc.y;
   doc
     .font("Helvetica")
     .fontSize(8)
     .fillColor("#64748b")
-    .text(footerText, margins.left, pageHeight - 34, { width: contentWidth, align: "center", lineBreak: false });
+    .text(`${footerText} | Page ${currentPage} of ${totalPages}`, margins.left, pageHeight - 34, { width: contentWidth, align: "center", lineBreak: false });
   doc.y = previousY;
 }
 
-function withPageChrome(doc: PDFKit.PDFDocument, report: RequestReportData) {
-  drawHeader(doc, report);
-  drawFooter(doc);
-  doc.y = headerHeight + 24;
-
-  doc.on("pageAdded", () => {
+function applyPageChrome(doc: PDFKit.PDFDocument, report: RequestReportData) {
+  const range = doc.bufferedPageRange();
+  for (let i = range.start; i < range.start + range.count; i++) {
+    doc.switchToPage(i);
     drawHeader(doc, report);
-    drawFooter(doc);
-    doc.y = headerHeight + 24;
-  });
+    drawFooter(doc, i + 1, range.count);
+  }
 }
 
 function ensureSpace(doc: PDFKit.PDFDocument, needed = 80) {
   if (doc.y + needed > pageHeight - margins.bottom - 24) {
     doc.addPage();
+    doc.y = headerHeight + 24;
   }
 }
 
@@ -153,6 +155,26 @@ function statusColor(status: RequestReportApproval["status"]) {
   return "#334155";
 }
 
+function drawOfficialSeal(doc: PDFKit.PDFDocument, x: number, y: number) {
+  doc.save();
+  doc.circle(x, y, 32).lineWidth(1.5).strokeColor("#006b3f").stroke();
+  doc.circle(x, y, 28).lineWidth(0.5).strokeColor("#006b3f").stroke();
+  doc.fontSize(5.5).font("Helvetica-Bold").fillColor("#006b3f");
+  doc.text("HALMASHAURI YA WILAYA YA CHALINZE", x - 27, y - 20, { width: 54, align: "center" });
+  doc.text("★ TEHAMA ★", x - 27, y - 4, { width: 54, align: "center" });
+  doc.fontSize(5).text("VERIFIED & SEALED", x - 27, y + 10, { width: 54, align: "center" });
+  doc.restore();
+}
+
+function drawDigitalSignature(doc: PDFKit.PDFDocument, x: number, y: number, name: string, date: string | null) {
+  doc.save();
+  doc.rect(x, y, 160, 44).fillAndStroke("#f0fdf4", "#86efac");
+  doc.fontSize(7).font("Helvetica-Bold").fillColor("#166534").text("DIGITALLY SIGNED & SEALED", x + 8, y + 6);
+  doc.fontSize(7).font("Helvetica").fillColor("#15803d").text(`Signed by: ${name}`, x + 8, y + 18);
+  doc.fontSize(6).fillColor("#475569").text(`Date: ${formatDate(date)}`, x + 8, y + 30);
+  doc.restore();
+}
+
 function approvalSection(doc: PDFKit.PDFDocument, title: string, approval: RequestReportApproval, labels: { office: string; position: string }) {
   sectionTitle(doc, title);
   ensureSpace(doc, 34);
@@ -169,6 +191,14 @@ function approvalSection(doc: PDFKit.PDFDocument, title: string, approval: Reque
     ["Date", formatDate(approval.date)],
     [approval.status === "REJECTED" ? "Rejection Reason" : "Comments", approval.comments]
   ]);
+
+  if (approval.status === "APPROVED") {
+    ensureSpace(doc, 54);
+    const startY = doc.y;
+    drawOfficialSeal(doc, margins.left + 40, startY + 24);
+    drawDigitalSignature(doc, margins.left + 90, startY + 2, approval.name, approval.date);
+    doc.y = startY + 54;
+  }
 }
 
 function systemsSection(doc: PDFKit.PDFDocument, report: RequestReportData) {
@@ -232,7 +262,7 @@ export async function renderRequestReportPdf(report: RequestReportData): Promise
     const doc = new PDFDocument({
       size: "A4",
       margins,
-      bufferPages: false,
+      bufferPages: true,
       info: {
         Title: `User Access Request Report - ${report.request.requestNumber}`,
         Author: "Chalinze District Council User Access Management System",
@@ -245,7 +275,7 @@ export async function renderRequestReportPdf(report: RequestReportData): Promise
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    withPageChrome(doc, report);
+    doc.y = headerHeight + 24;
 
     sectionTitle(doc, "Section 1: Request Information");
     table(doc, [
@@ -286,12 +316,17 @@ export async function renderRequestReportPdf(report: RequestReportData): Promise
 
     timelineSection(doc, report);
 
-    sectionTitle(doc, "Section 8: Audit Information");
+    const verificationHash = "CDC-VERIFIED-" + crypto.createHash("sha256").update(`${report.request.id}:${report.request.requestNumber}`).digest("hex").slice(0, 16).toUpperCase();
+
+    sectionTitle(doc, "Section 8: Audit & Verification Information");
     table(doc, [
       ["Generated By", report.generatedBy],
       ["Generated Date", formatDate(report.generatedAt)],
-      ["Request ID", report.request.id]
+      ["Request ID", report.request.id],
+      ["Verification Code", verificationHash]
     ]);
+
+    applyPageChrome(doc, report);
 
     doc.end();
   });

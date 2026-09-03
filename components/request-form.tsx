@@ -87,7 +87,7 @@ export function RequestForm({ profile, systems }: { profile: ApplicantProfile; s
     );
   }
 
-  const requiresTargetUser = form.action === "Modify User" || form.action === "Block User";
+  const requiresTargetUser = form.action === "Modify User" || form.action === "Block User" || form.action === "Reset Password";
   const availableLgas = lgasByRegion[form.region as Region] ?? [];
 
   async function saveRequest(mode: "draft" | "submit") {

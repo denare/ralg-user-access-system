@@ -132,6 +132,7 @@ model AccessRequest {
   updatedAt           DateTime               @updatedAt
 
   @@index([applicantId])
+  @@index([applicantId, status])
   @@index([status])
   @@index([department])
   @@index([createdAt])
@@ -157,6 +158,7 @@ model Approval {
   comment     String?
   decidedAt   DateTime      @default(now())
 
+  @@unique([requestId, approverRole])
   @@index([requestId])
   @@index([approverId])
 }

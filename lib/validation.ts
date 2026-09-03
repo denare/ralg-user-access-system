@@ -35,6 +35,22 @@ export const requestSchema = z.object({
   if (!validLgas.includes(data.lga)) {
     context.addIssue({ code: "custom", path: ["lga"], message: "Select an LGA that belongs to the selected region." });
   }
+
+  // Validate otherSystem when 'Other' is included in systems list
+  if (data.systems.includes("Other") && (!data.otherSystem || !data.otherSystem.trim())) {
+    context.addIssue({ code: "custom", path: ["otherSystem"], message: "Specify the system name when 'Other' is selected." });
+  }
+
+  // Validate target user fields when action target is another employee
+  const requiresTarget = ["Modify User", "Block User", "Reset Password"].includes(data.action);
+  if (requiresTarget) {
+    if (!data.targetCheckNumber || !data.targetCheckNumber.trim()) {
+      context.addIssue({ code: "custom", path: ["targetCheckNumber"], message: "Enter the target employee's check number." });
+    }
+    if (!data.targetFullName || !data.targetFullName.trim()) {
+      context.addIssue({ code: "custom", path: ["targetFullName"], message: "Enter the target employee's full name." });
+    }
+  }
 });
 
 export const applicantSignupSchema = z.object({
