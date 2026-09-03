@@ -8,7 +8,10 @@ import { mutationGuard } from "@/lib/rate-limit";
 
 const decisionSchema = z.object({
   decision: z.enum(["approve", "reject"]),
-  comment: z.string().trim().min(10, "A minimum 10-character rationale comment is required.").max(1000)
+  comment: z.string().trim().min(10, "A minimum 10-character rationale comment is required.").max(1000),
+  designation: z.string().trim().max(200).optional(),
+  signatureDataUrl: z.string().optional().nullable(),
+  applySeal: z.boolean().optional()
 });
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -47,6 +50,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const decision: Decision = approved ? "APPROVE" : "REJECT";
   const nextStatus = !approved ? "REJECTED" : isHodStep ? "PENDING_ICT" : "COMPLETED";
 
+  // signatureDataUrl is a base64 data URI — store as text (it's embedded in the PDF, not uploaded separately)
+  const signatureUrl = parsed.data.signatureDataUrl ?? null;
+  const designation = parsed.data.designation ?? null;
+
   try {
     await prisma.$transaction([
       prisma.approval.create({
@@ -55,7 +62,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           approverId: profile.id,
           approverRole: profile.role,
           decision,
-          comment: parsed.data.comment
+          comment: parsed.data.comment,
+          designation,
+          signatureUrl
         }
       }),
       prisma.accessRequest.update({
@@ -64,6 +73,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           status: nextStatus,
           hodComment: isHodStep ? parsed.data.comment : item.hodComment,
           ictComment: isIctStep ? parsed.data.comment : item.ictComment,
+          hodDesignation: isHodStep ? designation : item.hodDesignation,
+          ictDesignation: isIctStep ? designation : item.ictDesignation,
           completedAt: nextStatus === "COMPLETED" ? new Date() : null
         }
       }),

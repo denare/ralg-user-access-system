@@ -5,8 +5,15 @@ import { getCurrentShellProfile } from "@/lib/auth";
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
-  title: "Government User Access Management System",
-  description: "Official digital workflow for government information system access requests."
+  title: "e-Vibali Chalinze | Mfumo wa Vibali vya TEHAMA",
+  description: "Mfumo rasmi wa kidijitali wa maombi ya ufikiaji wa mifumo ya taarifa ya Halmashauri ya Wilaya ya Chalinze.",
+  icons: {
+    icon: [
+      { url: "/branding/HalmashauriYaChalinze.png", type: "image/png" },
+    ],
+    apple: "/branding/HalmashauriYaChalinze.png",
+    shortcut: "/branding/HalmashauriYaChalinze.png",
+  },
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

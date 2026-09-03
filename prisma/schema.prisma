@@ -126,6 +126,9 @@ model AccessRequest {
   status              RequestStatus
   hodComment          String?
   ictComment          String?
+  hodDesignation      String?
+  ictDesignation      String?
+  signedDocumentUrl   String?
   completedAt         DateTime?
   approvals           Approval[]
   createdAt           DateTime               @default(now())
@@ -148,15 +151,17 @@ model RequestSystem {
 }
 
 model Approval {
-  id          String        @id @default(cuid())
-  requestId   String
-  request     AccessRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  approverId  String
-  approver    User          @relation(fields: [approverId], references: [id])
+  id           String        @id @default(cuid())
+  requestId    String
+  request      AccessRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  approverId   String
+  approver     User          @relation(fields: [approverId], references: [id])
   approverRole UserRole
-  decision    Decision
-  comment     String?
-  decidedAt   DateTime      @default(now())
+  decision     Decision
+  comment      String?
+  designation  String?
+  signatureUrl String?
+  decidedAt    DateTime      @default(now())
 
   @@unique([requestId, approverRole])
   @@index([requestId])
