@@ -172,18 +172,21 @@ function approvalSection(
   ];
   rows.forEach(([l, v], i) => tableRow(doc, l, v, i % 2 === 0));
 
-  // Signature box
+  // Official approval box
   needSpace(doc, 52);
   const sigY = doc.y + 4;
   doc.rect(margins.left, sigY, contentWidth / 2, 44).stroke("#cbd5e1");
   doc.font("Helvetica").fontSize(7).fillColor("#94a3b8")
-    .text("Signature / Muhuri:", margins.left + 6, sigY + 4);
-  if (approval.status === "APPROVED" && approval.signatureUrl) {
-    // If a signature image was uploaded, embed it
-    doc.image(approval.signatureUrl, margins.left + 6, sigY + 14, { height: 26, fit: [120, 26] });
+    .text("Official Verification / Stamp:", margins.left + 6, sigY + 4);
+  if (approval.status === "APPROVED") {
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#047857")
+      .text("[ DIGITALLY VERIFIED & AUTHORIZED ]", margins.left + 6, sigY + 20);
+  } else if (approval.status === "REJECTED") {
+    doc.font("Helvetica-Bold").fontSize(8).fillColor("#b91c1c")
+      .text("[ REQUEST REJECTED ]", margins.left + 6, sigY + 20);
   } else {
-    doc.fontSize(6.5).fillColor("#cbd5e1")
-      .text("(To be signed and stamped)", margins.left + 6, sigY + 24, { width: contentWidth / 2 - 12 });
+    doc.fontSize(7).fillColor("#94a3b8")
+      .text("(Pending Authorization)", margins.left + 6, sigY + 20);
   }
   doc.y = sigY + 44 + 6;
 }

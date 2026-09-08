@@ -31,6 +31,21 @@ const initialState = {
   reason: ""
 };
 
+function formatNinDisplay(raw: string): string {
+  const digits = raw.replace(/\D/g, "").slice(0, 20);
+  let formatted = digits;
+  if (digits.length > 8) {
+    formatted = digits.slice(0, 8) + "-" + digits.slice(8);
+  }
+  if (digits.length > 13) {
+    formatted = digits.slice(0, 8) + "-" + digits.slice(8, 13) + "-" + digits.slice(13);
+  }
+  if (digits.length > 18) {
+    formatted = digits.slice(0, 8) + "-" + digits.slice(8, 13) + "-" + digits.slice(13, 18) + "-" + digits.slice(18);
+  }
+  return formatted;
+}
+
 type ApplicantProfile = {
   fullName: string;
   email: string;
@@ -49,12 +64,46 @@ type RequestApiResponse = {
   formErrors?: string[];
 };
 
-export function RequestForm({ profile, systems }: { profile: ApplicantProfile; systems: string[] }) {
+export function RequestForm({
+  profile,
+  systems,
+  initialData
+}: {
+  profile: ApplicantProfile;
+  systems: string[];
+  initialData?: any;
+}) {
   const router = useRouter();
-  const [selectedSystems, setSelectedSystems] = useState<string[]>(systems.slice(0, 1));
-  const [form, setForm] = useState({ ...initialState, region: profile.region ?? initialState.region,
-    fullName: profile.fullName, email: profile.email, phone: profile.phone ?? "",
-    department: profile.department ?? "", designation: profile.designation ?? "" });
+  const [selectedSystems, setSelectedSystems] = useState<string[]>(
+    initialData?.systems ? initialData.systems : systems.slice(0, 1)
+  );
+  const [form, setForm] = useState({
+    ...initialState,
+    region: profile.region ?? initialState.region,
+    fullName: profile.fullName,
+    email: profile.email,
+    phone: profile.phone ?? "",
+    department: profile.department ?? "",
+    designation: profile.designation ?? "",
+    ...(initialData ? {
+      region: initialData.region || profile.region || initialState.region,
+      lga: initialData.lga || "",
+      facility: initialData.facility || "",
+      action: initialData.action || "Create User",
+      environment: initialData.environment || "Production",
+      checkNumber: initialData.checkNumber || "",
+      nin: formatNinDisplay(initialData.nin || ""),
+      targetCheckNumber: initialData.targetCheckNumber || "",
+      targetFullName: initialData.targetFullName || "",
+      targetDesignation: initialData.targetDesignation || "",
+      targetDepartment: initialData.targetDepartment || "",
+      targetPhone: initialData.targetPhone || "",
+      targetEmail: initialData.targetEmail || "",
+      requestedRole: initialData.requestedRole || "",
+      otherSystem: initialData.otherSystem || "",
+      reason: initialData.reason || ""
+    } : {})
+  });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -99,7 +148,7 @@ export function RequestForm({ profile, systems }: { profile: ApplicantProfile; s
       const response = await fetch("/api/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, systems: selectedSystems, mode })
+        body: JSON.stringify({ ...form, nin: form.nin.replace(/\D/g, ""), systems: selectedSystems, mode })
       });
       const result = await response.json().catch(() => ({})) as RequestApiResponse;
 
@@ -220,8 +269,8 @@ export function RequestForm({ profile, systems }: { profile: ApplicantProfile; s
           <Field label="Check Number" error={fieldErrors.checkNumber?.[0]}>
             <input className={fieldClass("checkNumber")} value={form.checkNumber} onChange={(e) => updateForm("checkNumber", e.target.value)} aria-invalid={Boolean(fieldErrors.checkNumber)} />
           </Field>
-          <Field label="NIN" error={fieldErrors.nin?.[0]}>
-            <input className={fieldClass("nin")} value={form.nin} onChange={(e) => updateForm("nin", e.target.value)} aria-invalid={Boolean(fieldErrors.nin)} />
+          <Field label="NIN (National ID Number - 20 Digits)" error={fieldErrors.nin?.[0]}>
+            <input className={fieldClass("nin")} placeholder="20012906-61315-00001-26" value={form.nin} onChange={(e) => updateForm("nin", formatNinDisplay(e.target.value))} aria-invalid={Boolean(fieldErrors.nin)} />
           </Field>
           <Field label="Full Name" error={fieldErrors.fullName?.[0]}>
             <input className={fieldClass("fullName", "bg-slate-100")} value={form.fullName} readOnly aria-invalid={Boolean(fieldErrors.fullName)} />

@@ -48,7 +48,6 @@ export type RequestReportApproval = {
   designation: string;
   date: string | null;
   comments: string;
-  signatureUrl: string | null;
 };
 
 export type RequestReportTimelineItem = {
@@ -99,8 +98,7 @@ function emptyApproval(): RequestReportApproval {
     position: "Not recorded",
     designation: "Not recorded",
     date: null,
-    comments: "No comments recorded.",
-    signatureUrl: null
+    comments: "No comments recorded."
   };
 }
 
@@ -108,7 +106,6 @@ function toApproval(approval: {
   decision: Decision;
   comment: string | null;
   designation: string | null;
-  signatureUrl: string | null;
   decidedAt: Date;
   approver: { fullName: string; department: string | null; designation: string | null };
 } | undefined): RequestReportApproval {
@@ -121,8 +118,7 @@ function toApproval(approval: {
     position: approval.approver.designation ?? "Not recorded",
     designation: approval.designation ?? approval.approver.designation ?? "Not recorded",
     date: approval.decidedAt.toISOString(),
-    comments: approval.comment?.trim() || "No comments recorded.",
-    signatureUrl: approval.signatureUrl ?? null
+    comments: approval.comment?.trim() || "No comments recorded."
   };
 }
 

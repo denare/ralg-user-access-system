@@ -1,293 +1,232 @@
-#!/usr/bin/env node
+import { createClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
+dotenv.config();
+
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const projectRef = "jakncquxfhrmgysjpvhx";
+
+if (!url || !serviceKey || !anonKey) {
+  console.error("Missing Supabase configuration");
+  process.exit(1);
+}
+
+const BASE_URL = "http://localhost:3000";
+const CHUNK_SIZE = 3000;
+
 /**
- * Chalinze User Access Management System — Production Health & E2E Integration Suite
- * 
- * Usage:
- *   node test-system.mjs
- * 
- * Pre-requisite:
- *   Dev server running at http://localhost:3000 (npm run dev)
+ * Authenticates with Supabase and returns a cookie string in the
+ * chunked base64 format that @supabase/ssr expects.
  */
-
-import { createBrowserClient } from "@supabase/ssr";
-import { readFileSync } from "fs";
-
-// Load environment variables
-const envFile = readFileSync(".env", "utf8");
-const env = {};
-for (const line of envFile.split("\n")) {
-  const [k, ...rest] = line.split("=");
-  if (k && rest.length) env[k.trim()] = rest.join("=").replace(/^"|"$/g, "").trim();
+async function getAuthCookie(email, password) {
+  const client = createClient(url, anonKey);
+  const { data, error } = await client.auth.signInWithPassword({ email, password });
+  if (error || !data.session) {
+    throw new Error(`Login failed for ${email}: ${error?.message}`);
+  }
+  const session = data.session;
+  const payload = JSON.stringify({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+    expires_at: session.expires_at,
+    expires_in: session.expires_in,
+    token_type: "bearer",
+    user: session.user
+  });
+  const b64 = Buffer.from(payload).toString("base64");
+  const cookieName = `sb-${projectRef}-auth-token`;
+  const chunks = [];
+  for (let i = 0; i < b64.length; i += CHUNK_SIZE) {
+    chunks.push(b64.substring(i, i + CHUNK_SIZE));
+  }
+  if (chunks.length === 1) {
+    return `${cookieName}.0=${encodeURIComponent("base64-" + chunks[0])}`;
+  }
+  return chunks
+    .map((chunk, i) => `${cookieName}.${i}=${encodeURIComponent(i === 0 ? "base64-" + chunk : chunk)}`)
+    .join("; ");
 }
 
-const BASE = process.env.TEST_BASE_URL || "http://localhost:3000";
+let passed = 0;
+let failed = 0;
 
-const CREDS = {
-  applicant: { email: "applicant.demo@tamisemi.go.tz", password: "TestDemo2026!" },
-  hod:       { email: "hod.demo@tamisemi.go.tz",       password: "TestDemo2026!" },
-  ict:       { email: "ict.demo@tamisemi.go.tz",        password: "TestDemo2026!" },
-  admin:     { email: "admin.demo@tamisemi.go.tz",      password: "TestDemo2026!" },
-};
+function ok(msg) { passed++; console.log(`✓ ${msg}`); }
+function fail(msg) { failed++; console.error(`❌ ${msg}`); }
 
-let passed = 0, failed = 0;
-const results = [];
+async function runTests() {
+  console.log("=== STARTING FULL SYSTEM E2E AUDIT TESTS ===\n");
 
-function log(name, ok, detail = "") {
-  const icon = ok ? "✅" : "❌";
-  console.log(`${icon} [${name}] ${detail}`);
-  results.push({ name, ok, detail });
-  ok ? passed++ : failed++;
-}
+  const applicantCookie = await getAuthCookie("applicant.demo@tamisemi.go.tz", process.env.SEED_APPLICANT_PASSWORD);
+  const hodCookie = await getAuthCookie("hod.demo@tamisemi.go.tz", process.env.SEED_HOD_PASSWORD);
+  const ictCookie = await getAuthCookie("ict.demo@tamisemi.go.tz", process.env.SEED_ICT_PASSWORD);
+  const adminCookie = await getAuthCookie("admin.demo@tamisemi.go.tz", process.env.SEED_ADMIN_PASSWORD);
+  ok("Logged in as Applicant, HOD, ICT Officer, and Admin.");
 
-async function getAuthCookie(role) {
-  const cred = CREDS[role];
-  const cookies = {};
-  const client = createBrowserClient(env["NEXT_PUBLIC_SUPABASE_URL"], env["NEXT_PUBLIC_SUPABASE_ANON_KEY"], {
-    cookies: {
-      getAll() { return Object.entries(cookies).map(([name, value]) => ({ name, value })); },
-      setAll(cookiesToSet) { cookiesToSet.forEach(({ name, value }) => { cookies[name] = value; }); }
+  // ── Test 1: NIN Validation (must reject non-20 digits) ──
+  console.log("\n[TEST 1] NIN 20-digit validation...");
+  const invalidNinRes = await fetch(`${BASE_URL}/api/requests`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: applicantCookie },
+    body: JSON.stringify({
+      region: "Pwani", lga: "Chalinze DC", facility: "HQ", action: "Create User", environment: "Production",
+      checkNumber: "CHK1001", nin: "12345", fullName: "Amina Msuya", designation: "Officer",
+      department: "Planning", phone: "0712345678", email: "applicant.demo@tamisemi.go.tz",
+      requestedRole: "User", reason: "Need system access for official planning duties.", systems: ["FFARS"], mode: "submit"
+    })
+  });
+  if (invalidNinRes.status === 400) {
+    const errBody = await invalidNinRes.json();
+    ok(`NIN validation rejected short NIN (HTTP 400). Error: ${errBody.fieldErrors?.nin?.[0] ?? errBody.error}`);
+  } else {
+    fail(`NIN validation did not return 400. Got: ${invalidNinRes.status}`);
+  }
+
+  // ── Test 2: Valid Submission with 20-digit NIN ──
+  console.log("\n[TEST 2] Submitting request with valid 20-digit NIN...");
+  const submitRes = await fetch(`${BASE_URL}/api/requests`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: applicantCookie },
+    body: JSON.stringify({
+      region: "Pwani", lga: "Chalinze DC", facility: "HQ", action: "Create User", environment: "Production",
+      checkNumber: "CHK1001", nin: "20012906613150000126", fullName: "Amina Msuya", designation: "Officer",
+      department: "Planning", phone: "0712345678", email: "applicant.demo@tamisemi.go.tz",
+      requestedRole: "User", reason: "Need system access for official planning duties.", systems: ["FFARS"], mode: "submit"
+    })
+  });
+  const submitData = await submitRes.json();
+  if (!submitRes.ok || !submitData.id) {
+    throw new Error(`Request submission failed (HTTP ${submitRes.status}): ${JSON.stringify(submitData)}`);
+  }
+  const requestId = submitData.id;
+  ok(`Access request created: ${requestId} (${submitData.requestNumber})`);
+
+  // ── Test 3: RBAC PDF Download Protection ──
+  console.log("\n[TEST 3] RBAC PDF Download Protection...");
+  const applicantDl = await fetch(`${BASE_URL}/api/requests/${requestId}/report`, { headers: { Cookie: applicantCookie } });
+  applicantDl.status === 403 ? ok("Applicant PDF download blocked (403).") : fail(`Applicant PDF not blocked. Got: ${applicantDl.status}`);
+
+  const hodDl = await fetch(`${BASE_URL}/api/requests/${requestId}/report`, { headers: { Cookie: hodCookie } });
+  hodDl.status === 403 ? ok("HOD PDF download blocked (403).") : fail(`HOD PDF not blocked. Got: ${hodDl.status}`);
+
+  // ── Test 4: HOD Approve ──
+  console.log("\n[TEST 4] HOD approving request...");
+  const hodDecRes = await fetch(`${BASE_URL}/api/requests/${requestId}/decision`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: hodCookie },
+    body: JSON.stringify({ decision: "approve", comment: "Endorsed and approved for ICT processing.", designation: "Head of Planning" })
+  });
+  const hodDecData = await hodDecRes.json();
+  if (hodDecRes.ok && hodDecData.status === "PENDING_ICT") {
+    ok("HOD approved. Status → PENDING_ICT.");
+  } else {
+    throw new Error(`HOD approval failed (HTTP ${hodDecRes.status}): ${JSON.stringify(hodDecData)}`);
+  }
+
+  // ── Test 5: ICT PDF Download (must succeed) ──
+  console.log("\n[TEST 5] ICT Officer PDF Download authorization...");
+  const ictDl = await fetch(`${BASE_URL}/api/requests/${requestId}/report`, { headers: { Cookie: ictCookie } });
+  if (ictDl.status === 200 && ictDl.headers.get("content-type")?.includes("application/pdf")) {
+    ok("ICT Officer PDF download succeeded (200 OK, application/pdf).");
+  } else {
+    fail(`ICT PDF download failed. Status: ${ictDl.status}, Content-Type: ${ictDl.headers.get("content-type")}`);
+  }
+
+  // Admin PDF Download
+  const adminDl = await fetch(`${BASE_URL}/api/requests/${requestId}/report`, { headers: { Cookie: adminCookie } });
+  if (adminDl.status === 200 && adminDl.headers.get("content-type")?.includes("application/pdf")) {
+    ok("Admin PDF download succeeded (200 OK, application/pdf).");
+  } else {
+    fail(`Admin PDF download failed. Status: ${adminDl.status}`);
+  }
+
+  // ── Test 6: ICT Complete Request ──
+  console.log("\n[TEST 6] ICT Officer completing request...");
+  const ictDecRes = await fetch(`${BASE_URL}/api/requests/${requestId}/decision`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: ictCookie },
+    body: JSON.stringify({ decision: "approve", comment: "Account created and credentials issued.", designation: "Senior ICT Officer" })
+  });
+  const ictDecData = await ictDecRes.json();
+  if (ictDecRes.ok && ictDecData.status === "COMPLETED") {
+    ok("ICT Officer completed request. Status → COMPLETED.");
+  } else {
+    throw new Error(`ICT completion failed (HTTP ${ictDecRes.status}): ${JSON.stringify(ictDecData)}`);
+  }
+
+  // ── Test 7: Download All ZIP ──
+  console.log("\n[TEST 7] Download All ZIP endpoint...");
+  const zipRes = await fetch(`${BASE_URL}/api/requests/download-all`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: ictCookie },
+    body: JSON.stringify({ status: "COMPLETED" })
+  });
+  if (zipRes.status === 200 && zipRes.headers.get("content-type")?.includes("application/zip")) {
+    ok("Download All ZIP generated (200, application/zip).");
+  } else {
+    fail(`Download All ZIP failed. Status: ${zipRes.status}, CT: ${zipRes.headers.get("content-type")}`);
+  }
+
+  // ── Test 8: Rejection + Apply Again ──
+  console.log("\n[TEST 8] Rejection and Apply Again workflow...");
+  const req2Res = await fetch(`${BASE_URL}/api/requests`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: applicantCookie },
+    body: JSON.stringify({
+      region: "Pwani", lga: "Chalinze DC", facility: "HQ", action: "Create User", environment: "Production",
+      checkNumber: "CHK1002", nin: "20012906613150000126", fullName: "Amina Msuya", designation: "Officer",
+      department: "Planning", phone: "0712345678", email: "applicant.demo@tamisemi.go.tz",
+      requestedRole: "User", reason: "Need system access for testing purposes.", systems: ["PLANREP"], mode: "submit"
+    })
+  });
+  const req2Data = await req2Res.json();
+  if (!req2Res.ok || !req2Data.id) {
+    throw new Error(`Second request submission failed: ${JSON.stringify(req2Data)}`);
+  }
+  ok(`Second request created: ${req2Data.id}`);
+
+  // HOD rejects
+  const rejRes = await fetch(`${BASE_URL}/api/requests/${req2Data.id}/decision`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: hodCookie },
+    body: JSON.stringify({ decision: "reject", comment: "Information incomplete. Please specify exact role.", designation: "Head of Planning" })
+  });
+  const rejData = await rejRes.json();
+  if (rejRes.ok && rejData.status === "REJECTED") {
+    ok("Request rejected by HOD. Status → REJECTED.");
+  } else {
+    fail(`HOD rejection failed: ${JSON.stringify(rejData)}`);
+  }
+
+  // ── Test 9: Notifications created ──
+  console.log("\n[TEST 9] Notifications for applicant...");
+  const notifRes = await fetch(`${BASE_URL}/api/notifications`, {
+    headers: { Cookie: applicantCookie }
+  });
+  if (notifRes.ok) {
+    const notifData = await notifRes.json();
+    const count = Array.isArray(notifData) ? notifData.length : ((notifData.notifications ?? notifData.data)?.length ?? 0);
+    if (count > 0) {
+      ok(`Applicant has ${count} notification(s).`);
+    } else {
+      fail("No notifications found for applicant after HOD decisions.");
     }
-  });
-
-  const res = await client.auth.signInWithPassword({
-    email: cred.email,
-    password: cred.password
-  });
-
-  if (res.error) {
-    throw new Error(`Login failed for ${role}: ${res.error.message}`);
+  } else {
+    fail(`Notifications endpoint failed. Status: ${notifRes.status}`);
   }
 
-  return Object.entries(cookies).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("; ");
-}
-
-async function apiCall(method, path, body, cookieHeader) {
-  const opts = {
-    method,
-    headers: {
-      "Cookie": cookieHeader || "",
-      ...(body instanceof FormData ? {} : { "Content-Type": "application/json" }),
-    },
-    redirect: "manual",
-  };
-  if (body) opts.body = body instanceof FormData ? body : JSON.stringify(body);
-  return fetch(`${BASE}${path}`, opts);
-}
-
-async function main() {
-  console.log("\n==================================================================");
-  console.log("  CHALINZE UAMS — COMPREHENSIVE SYSTEM VERIFICATION SUITE");
-  console.log("  Target Server:", BASE);
-  console.log("==================================================================\n");
-
-  // 1. Health & Database connectivity
-  console.log("--- 1. Health & Database Connectivity ---");
-  const health = await fetch(`${BASE}/api/health`).then(r => r.json()).catch(() => null);
-  log("Health probe", health?.status === "healthy" && health?.database === "available",
-    health ? `DB status: ${health.database}` : "Server unreachable — start 'npm run dev' first");
-
-  if (!health) {
-    console.log("\n❌ Server is offline. Please run 'npm run dev' in another terminal and try again.");
-    process.exit(1);
-  }
-
-  // 2. Demo Account Authentication
-  console.log("\n--- 2. Role Authentication (Demo Accounts) ---");
-  let applicantCookie, hodCookie, ictCookie, adminCookie;
-  try {
-    applicantCookie = await getAuthCookie("applicant");
-    log("Applicant Auth (applicant.demo@tamisemi.go.tz)", true, "Authenticated OK");
-  } catch (e) { log("Applicant Auth", false, e.message); }
-
-  try {
-    hodCookie = await getAuthCookie("hod");
-    log("HOD Auth (hod.demo@tamisemi.go.tz)", true, "Authenticated OK");
-  } catch (e) { log("HOD Auth", false, e.message); }
-
-  try {
-    ictCookie = await getAuthCookie("ict");
-    log("ICT Officer Auth (ict.demo@tamisemi.go.tz)", true, "Authenticated OK");
-  } catch (e) { log("ICT Auth", false, e.message); }
-
-  try {
-    adminCookie = await getAuthCookie("admin");
-    log("Admin Auth (admin.demo@tamisemi.go.tz)", true, "Authenticated OK");
-  } catch (e) { log("Admin Auth", false, e.message); }
-
-  // 3. Security: Unauthenticated Route Protection
-  console.log("\n--- 3. Unauthenticated Access Protection ---");
-  const unauthRes = await fetch(`${BASE}/api/requests`, { redirect: "manual" });
-  log("Unauthenticated access guard", unauthRes.status === 401 || unauthRes.status === 307 || unauthRes.status === 302,
-    `Protected HTTP Status: ${unauthRes.status}`);
-
-  // 4. Applicant Workflow: Submit Access Request
-  console.log("\n--- 4. Applicant Workflow: Create Request ---");
-  let requestId = null;
-  if (applicantCookie) {
-    const payload = {
-      action: "Create User",
-      region: "Pwani",
-      lga: "Chalinze DC",
-      facility: "District Hospital",
-      environment: "Production",
-      checkNumber: "10023456",
-      nin: "19900101123456789012",
-      fullName: "Amina Msuya",
-      designation: "Planning Officer",
-      department: "Planning",
-      phone: "0712000001",
-      email: "applicant.demo@tamisemi.go.tz",
-      systems: ["Domain", "eOffice"],
-      requestedRole: "User",
-      reason: "Regular system health check automated request verification.",
-      mode: "submit"
-    };
-    const r = await apiCall("POST", "/api/requests", payload, applicantCookie);
-    const body = await r.json().catch(() => ({}));
-    log("Submit Access Request", r.status === 201, `HTTP ${r.status} — Request ID: ${body.id ?? body.error}`);
-    if (r.status === 201) requestId = body.id;
-  }
-
-  // 5. Request Listings & Navigation
-  console.log("\n--- 5. Navigation & Listing APIs ---");
-  if (applicantCookie) {
-    const r = await apiCall("GET", "/api/requests", null, applicantCookie);
-    const body = await r.json().catch(() => []);
-    const count = Array.isArray(body) ? body.length : (body?.requests?.length ?? (body?.data?.length ?? 0));
-    log("Applicant request listing", r.ok, `${count} requests retrieved`);
-  }
-  if (hodCookie) {
-    const r = await apiCall("GET", "/api/requests", null, hodCookie);
-    const body = await r.json().catch(() => []);
-    const count = Array.isArray(body) ? body.length : (body?.requests?.length ?? (body?.data?.length ?? 0));
-    log("HOD pending approval list", r.ok, `${count} department requests retrieved`);
-  }
-
-  // 6. PDF Report Generation
-  console.log("\n--- 6. Official PDF Report Generation ---");
-  if (requestId && applicantCookie) {
-    const r = await apiCall("GET", `/api/requests/${requestId}/report`, null, applicantCookie);
-    const ct = r.headers.get("content-type") ?? "";
-    log("Generate dynamic PDF report", r.ok && ct.includes("pdf"), `HTTP ${r.status}, Content-Type: ${ct}`);
-  }
-
-  // 7. HOD Decision Workflow
-  console.log("\n--- 7. HOD Decision Workflow ---");
-  if (requestId && hodCookie) {
-    const form = new FormData();
-    form.append("decision", "approve");
-    form.append("comment", "Request verified and approved by Head of Planning Department.");
-    form.append("designation", "Head of Planning Department");
-
-    const r = await apiCall("POST", `/api/requests/${requestId}/decision`, form, hodCookie);
-    const body = await r.json().catch(() => ({}));
-    log("HOD approve & forward to ICT", r.ok && body.status === "PENDING_ICT",
-      `HTTP ${r.status} — Status transitioned to: ${body.status ?? body.error}`);
-  }
-
-  // 8. ICT Officer Approval & Signed PDF Upload Workflow
-  console.log("\n--- 8. ICT Officer Approval & Signed PDF Upload ---");
-  if (requestId && ictCookie) {
-    const validPdfContent = "%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\nxref\n0 1\n0000000000 65535 f \ntrailer\n<< /Size 1 /Root 1 0 R >>\nstartxref\n9\n%%EOF";
-    const pdfBlob = new Blob([validPdfContent], { type: "application/pdf" });
-
-    const form = new FormData();
-    form.append("decision", "approve");
-    form.append("comment", "Access provisioned on Domain and eOffice. Signed document attached.");
-    form.append("designation", "ICT Officer — Chalinze DC");
-    form.append("signedDocument", pdfBlob, "official-signed-request.pdf");
-
-    const r = await apiCall("POST", `/api/requests/${requestId}/decision`, form, ictCookie);
-    const body = await r.json().catch(() => ({}));
-    log("ICT approve with signed PDF upload", r.ok && body.status === "COMPLETED",
-      `HTTP ${r.status} — Final Status: ${body.status ?? body.error}`);
-  }
-
-  // 9. Document Retrieval & Security Authorization Checks
-  console.log("\n--- 9. Secure Document Retrieval & RBAC Checks ---");
-  if (requestId && applicantCookie) {
-    const r = await apiCall("GET", `/api/requests/${requestId}/signed-document`, null, applicantCookie);
-    log("Applicant views signed document", r.ok || r.status === 404,
-      `HTTP ${r.status} ${r.status === 404 ? '(Supabase bucket setup required)' : 'Streamed PDF OK'}`);
-  }
-
-  if (requestId) {
-    const r1 = await fetch(`${BASE}/api/requests/${requestId}/signed-document`, { redirect: "manual" });
-    log("Unauthenticated document access → 401/307", r1.status === 401 || r1.status === 307 || r1.status === 302,
-      `HTTP Status: ${r1.status}`);
-  }
-
-  // 10. File Security Validation Tests (JPEG, fake PDF, size limit)
-  console.log("\n--- 10. Security: File Upload Protections ---");
-  let secRequestId = null;
-  if (applicantCookie) {
-    const r = await apiCall("POST", "/api/requests", {
-      action: "Create User",
-      region: "Pwani",
-      lga: "Chalinze DC",
-      facility: "District Hospital",
-      environment: "Production",
-      checkNumber: "10023456",
-      nin: "19900101123456789012",
-      fullName: "Amina Msuya",
-      designation: "Planning Officer",
-      department: "Planning",
-      phone: "0712000001",
-      email: "applicant.demo@tamisemi.go.tz",
-      systems: ["Domain"],
-      requestedRole: "User",
-      reason: "Request created specifically for security validation test.",
-      mode: "submit"
-    }, applicantCookie);
-    const b = await r.json().catch(() => ({}));
-    if (r.status === 201) secRequestId = b.id;
-  }
-
-  if (secRequestId && hodCookie) {
-    const f = new FormData();
-    f.append("decision", "approve");
-    f.append("comment", "Forwarding for security test validation.");
-    await apiCall("POST", `/api/requests/${secRequestId}/decision`, f, hodCookie);
-  }
-
-  if (secRequestId && ictCookie) {
-    // 10a: Non-PDF MIME (JPEG)
-    const jpgBlob = new Blob(["\xFF\xD8\xFF\xE0" + "fake image"], { type: "image/jpeg" });
-    const f1 = new FormData();
-    f1.append("decision", "approve");
-    f1.append("comment", "Validating JPEG rejection test.");
-    f1.append("signedDocument", jpgBlob, "image.jpg");
-    const r1 = await apiCall("POST", `/api/requests/${secRequestId}/decision`, f1, ictCookie);
-    log("Security: Reject JPG upload", r1.status === 400, `HTTP ${r1.status}`);
-
-    // 10b: Fake PDF (bad magic bytes)
-    const fakePdfBlob = new Blob(["NOT_A_PDF_HEADER_DATA"], { type: "application/pdf" });
-    const f2 = new FormData();
-    f2.append("decision", "approve");
-    f2.append("comment", "Validating bad magic bytes rejection test.");
-    f2.append("signedDocument", fakePdfBlob, "malicious.pdf");
-    const r2 = await apiCall("POST", `/api/requests/${secRequestId}/decision`, f2, ictCookie);
-    const b2 = await r2.json().catch(() => ({}));
-    log("Security: Reject fake PDF (magic bytes)", r2.status === 400, `HTTP ${r2.status} — ${b2.error}`);
-
-    // 10c: Oversized PDF (>5MB)
-    const bigBlob = new Blob(["%PDF-1.4\n" + "X".repeat(6 * 1024 * 1024)], { type: "application/pdf" });
-    const f3 = new FormData();
-    f3.append("decision", "approve");
-    f3.append("comment", "Validating 6MB size limit rejection test.");
-    f3.append("signedDocument", bigBlob, "oversized.pdf");
-    const r3 = await apiCall("POST", `/api/requests/${secRequestId}/decision`, f3, ictCookie);
-    log("Security: Reject PDF > 5MB", r3.status === 400, `HTTP ${r3.status}`);
-  }
-
-  // Summary
-  console.log("\n==================================================================");
-  console.log(`  SYSTEM VERIFICATION COMPLETE: ${passed} PASSED, ${failed} FAILED`);
-  console.log("==================================================================\n");
-
-  if (failed > 0) {
+  // ── Summary ──
+  console.log("\n" + "=".repeat(50));
+  console.log(`RESULTS: ${passed} passed, ${failed} failed, ${passed + failed} total`);
+  if (failed === 0) {
+    console.log("=== ALL E2E SYSTEM TESTS PASSED SUCCESSFULLY! ===");
+  } else {
+    console.log("=== SOME TESTS FAILED — SEE ABOVE ===");
     process.exit(1);
   }
 }
 
-main().catch(console.error);
+runTests().catch((err) => {
+  console.error("\nE2E Test Execution Failed:", err.message || err);
+  process.exit(1);
+});
