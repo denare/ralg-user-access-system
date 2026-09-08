@@ -8,7 +8,7 @@ import { formatDate } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
-  const profile = await requireProfile(["APPLICANT", "ICT_OFFICER", "ADMIN"]);
+  const profile = await requireProfile(["ICT_OFFICER", "ADMIN"]);
   const reportCards = await getScopedReportCards(profile);
   const requests = await getVisibleRequests(profile);
   const completed = requests.filter((request) => request.status === "Completed");

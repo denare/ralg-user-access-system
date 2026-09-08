@@ -5,8 +5,6 @@ import { getCurrentProfile } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { sameDepartment } from "@/lib/department-scope";
 import { mutationGuard } from "@/lib/rate-limit";
-import { createAdminClient } from "@/lib/supabase/admin";
-import crypto from "node:crypto";
 
 const decisionSchema = z.object({
   decision: z.enum(["approve", "reject"]),
@@ -33,22 +31,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "This request is not assigned to your approval stage or has already been decided." }, { status: 409 });
   }
 
-  let formData: FormData;
+  let bodyData: any = {};
   try {
-    formData = await request.formData();
+    const contentType = request.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      bodyData = await request.json();
+    } else {
+      const formData = await request.formData();
+      bodyData = {
+        decision: formData.get("decision"),
+        comment: formData.get("comment"),
+        designation: formData.get("designation")
+      };
+    }
   } catch {
-    return NextResponse.json({ error: "The submitted decision is not valid." }, { status: 400 });
+    return NextResponse.json({ error: "The submitted decision payload is invalid." }, { status: 400 });
   }
 
-  const rawDecision = formData.get("decision");
-  const rawComment = formData.get("comment");
-  const rawDesignation = formData.get("designation");
-  const signedDocument = formData.get("signedDocument") as File | null;
-
   const parsed = decisionSchema.safeParse({
-    decision: rawDecision,
-    comment: rawComment,
-    designation: rawDesignation || null
+    decision: bodyData.decision,
+    comment: bodyData.comment,
+    designation: bodyData.designation || null
   });
 
   if (!parsed.success) {
@@ -56,59 +59,42 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: errorMsg }, { status: 400 });
   }
 
-  let documentUrl: string | null = item.signedDocumentUrl;
-
-  if (signedDocument) {
-    if (signedDocument.type !== "application/pdf" && !signedDocument.name.toLowerCase().endsWith(".pdf")) {
-      return NextResponse.json({ error: "Only PDF files are allowed for signed documents." }, { status: 400 });
-    }
-    if (signedDocument.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: "Signed document must be less than 5MB." }, { status: 400 });
-    }
-
-    const arrayBuffer = await signedDocument.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    
-    // Validate PDF magic bytes (%PDF-)
-    if (buffer.length < 5 || buffer.subarray(0, 5).toString("ascii") !== "%PDF-") {
-      return NextResponse.json({ error: "Invalid PDF file signature." }, { status: 400 });
-    }
-    
-    const admin = createAdminClient();
-    
-    // Ensure bucket exists (or fails gracefully if we don't have permissions to create it, assuming it's manually created, 
-    // but we can try creating it just in case)
-    try {
-      await admin.storage.createBucket("private-documents", { public: false });
-    } catch {
-      // Bucket already exists or permission denied (which is fine if it exists)
-    }
-
-    // Generate safe non-guessable storage key (random 16-hex chars)
-    const randomKey = crypto.randomBytes(8).toString("hex");
-    const storagePath = `requests/${id}/signed-document_${randomKey}.pdf`;
-    
-    const { error: uploadError } = await admin.storage
-      .from("private-documents")
-      .upload(storagePath, buffer, {
-        contentType: "application/pdf",
-        upsert: true
-      });
-
-    if (uploadError) {
-      console.error("Supabase Storage upload failed:", uploadError);
-      return NextResponse.json({ error: "Failed to securely store the document." }, { status: 500 });
-    }
-
-    // Store the Supabase key in the database as requested
-    documentUrl = storagePath;
-  }
-
   const approved = parsed.data.decision === "approve";
   const decision: Decision = approved ? "APPROVE" : "REJECT";
   const nextStatus = !approved ? "REJECTED" : isHodStep ? "PENDING_ICT" : "COMPLETED";
+  const designation = parsed.data.designation ?? profile.designation ?? null;
 
-  const designation = parsed.data.designation ?? null;
+  // Prepare notification details
+  let notifTitleEn = "";
+  let notifTitleSw = "";
+  let notifMsgEn = "";
+  let notifMsgSw = "";
+
+  if (isHodStep) {
+    if (approved) {
+      notifTitleEn = "Request Approved by HOD";
+      notifTitleSw = "Ombi Lameidhinishwa na HOD";
+      notifMsgEn = `Your request ${item.requestNumber} was approved by Head of Department and forwarded to ICT for processing.`;
+      notifMsgSw = `Ombi lago ${item.requestNumber} limeidhinishwa na Mkuu wa Idara na kuwasilishwa ICT kwa utekelezaji.`;
+    } else {
+      notifTitleEn = "Request Rejected by HOD";
+      notifTitleSw = "Ombi Lamekataliwa na HOD";
+      notifMsgEn = `Your request ${item.requestNumber} was rejected by HOD. Reason: ${parsed.data.comment}. You can click 'Apply Again' to edit and resubmit.`;
+      notifMsgSw = `Ombi lago ${item.requestNumber} limekataliwa na HOD. Sababu: ${parsed.data.comment}. Waweza kubofya 'Omba Tena' kurekebisha na kuwasilisha.`;
+    }
+  } else {
+    if (approved) {
+      notifTitleEn = "Request Completed by ICT";
+      notifTitleSw = "Ombi Lamekamilishwa na ICT";
+      notifMsgEn = `Your request ${item.requestNumber} has been processed and marked completed by ICT Officer.`;
+      notifMsgSw = `Ombi lago ${item.requestNumber} limetekelezwa na kuwekwa kama limekamilika na Afisa wa ICT.`;
+    } else {
+      notifTitleEn = "Request Rejected by ICT";
+      notifTitleSw = "Ombi Lamekataliwa na ICT";
+      notifMsgEn = `Your request ${item.requestNumber} was rejected by ICT Officer. Reason: ${parsed.data.comment}. You can click 'Apply Again' to edit and resubmit.`;
+      notifMsgSw = `Ombi lago ${item.requestNumber} limekataliwa na Afisa wa ICT. Sababu: ${parsed.data.comment}. Waweza kubofya 'Omba Tena' kurekebisha na kuwasilisha.`;
+    }
+  }
 
   try {
     await prisma.$transaction([
@@ -119,9 +105,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           approverRole: profile.role,
           decision,
           comment: parsed.data.comment,
-          designation,
-          // signatureUrl field is legacy for image snippets, keeping it null now that we upload full PDFs
-          signatureUrl: null
+          designation
         }
       }),
       prisma.accessRequest.update({
@@ -132,8 +116,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           ictComment: isIctStep ? parsed.data.comment : item.ictComment,
           hodDesignation: isHodStep ? designation : item.hodDesignation,
           ictDesignation: isIctStep ? designation : item.ictDesignation,
-          signedDocumentUrl: documentUrl,
           completedAt: nextStatus === "COMPLETED" ? new Date() : null
+        }
+      }),
+      prisma.notification.create({
+        data: {
+          userId: item.applicantId,
+          title: notifTitleEn,
+          titleSw: notifTitleSw,
+          message: notifMsgEn,
+          messageSw: notifMsgSw,
+          link: `/requests`
         }
       }),
       prisma.auditLog.create({
@@ -142,7 +135,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           action: approved ? (isIctStep ? "REQUEST_COMPLETED" : "REQUEST_APPROVED") : "REQUEST_REJECTED",
           entityType: "AccessRequest",
           entityId: item.id,
-          details: { stage: profile.role, documentAttached: !!signedDocument }
+          details: { stage: profile.role, status: nextStatus }
         }
       })
     ]);
