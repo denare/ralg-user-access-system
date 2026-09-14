@@ -8,7 +8,9 @@ export const requestSchema = z.object({
   action: z.enum(["Create User", "Modify User", "Block User", "Reset Password"]),
   environment: z.enum(["Production", "Testing"]),
   checkNumber: z.string().min(2).max(40),
-  nin: z.string().min(10).max(30),
+  nin: z.string().transform((val) => val.replace(/\D/g, "")).refine((val) => /^\d{20}$/.test(val), {
+    message: "NIN must contain exactly 20 numeric digits."
+  }),
   fullName: z.string().min(3).max(160),
   designation: z.string().min(2).max(120),
   department: z.string().min(2).max(120),

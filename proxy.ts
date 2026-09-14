@@ -32,7 +32,9 @@ export async function proxy(request: NextRequest) {
   const isSignupApi = request.nextUrl.pathname === "/api/signup";
   const isAuthCallback = request.nextUrl.pathname === "/auth/callback";
 
-  if (!data.user && !isPublicPage && !isSignupApi && !isAuthCallback) {
+  const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
+
+  if (!data.user && !isPublicPage && !isSignupApi && !isAuthCallback && !isApiRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

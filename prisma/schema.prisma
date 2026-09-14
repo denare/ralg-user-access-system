@@ -55,6 +55,7 @@ model User {
   isActive       Boolean         @default(true)
   requests       AccessRequest[] @relation("Requester")
   approvals      Approval[]
+  notifications  Notification[]
   auditLogs      AuditLog[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -79,6 +80,22 @@ model SystemCatalog {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  titleSw   String?
+  message   String
+  messageSw String?
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([createdAt])
 }
 
 model AuditLog {
@@ -128,7 +145,6 @@ model AccessRequest {
   ictComment          String?
   hodDesignation      String?
   ictDesignation      String?
-  signedDocumentUrl   String?
   completedAt         DateTime?
   approvals           Approval[]
   createdAt           DateTime               @default(now())
@@ -160,7 +176,6 @@ model Approval {
   decision     Decision
   comment      String?
   designation  String?
-  signatureUrl String?
   decidedAt    DateTime      @default(now())
 
   @@unique([requestId, approverRole])

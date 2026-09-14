@@ -6,36 +6,27 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronRight,
   ClipboardCheck,
-  FileBarChart2,
   FileText,
   KeyRound,
   LayoutDashboard,
   LogOut,
   Menu,
-  Pin,
-  ShieldCheck,
   UserRound,
   Users,
   Settings,
   ScrollText,
   X,
-  Target
+  Target,
+  Globe,
+  Check
 } from "lucide-react";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { InactivityManager } from "@/components/inactivity-manager";
 import { AppLoader } from "@/components/app-loader";
-
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["APPLICANT", "HOD", "ICT_OFFICER", "ADMIN"] },
-  { href: "/requests/new", label: "New Request", icon: FileText, roles: ["APPLICANT"] },
-  { href: "/requests", label: "Request Register", icon: ClipboardCheck, roles: ["APPLICANT", "HOD", "ICT_OFFICER", "ADMIN"] },
-  { href: "/approvals", label: "Approvals", icon: ShieldCheck, roles: ["HOD", "ICT_OFFICER"] },
-  { href: "/users", label: "User Accounts", icon: Users, roles: ["ADMIN"] },
-  { href: "/configuration", label: "Configuration", icon: Settings, roles: ["ADMIN"] },
-  { href: "/audit", label: "Audit Log", icon: ScrollText, roles: ["ADMIN"] },
-  { href: "/reports", label: "Reports", icon: FileBarChart2, roles: ["APPLICANT", "ICT_OFFICER", "ADMIN"] }
-] as const;
+import { LanguageProvider, useLanguage } from "@/components/language-provider";
+import { NotificationBell } from "@/components/notification-bell";
+import { AnimatePresence, motion } from "framer-motion";
 
 type ShellProfile = { fullName: string; role: "APPLICANT" | "HOD" | "ICT_OFFICER" | "ADMIN" } | null;
 
@@ -54,8 +45,17 @@ function isItemActive(href: string, pathname: string) {
 }
 
 export function AppShell({ children, profile }: { children: ReactNode; profile: ShellProfile }) {
+  return (
+    <LanguageProvider>
+      <AppShellInner profile={profile}>{children}</AppShellInner>
+    </LanguageProvider>
+  );
+}
+
+function AppShellInner({ children, profile }: { children: ReactNode; profile: ShellProfile }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { lang, setLang, t } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isPinned, setIsPinned] = useState(true);
@@ -89,7 +89,7 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
     localStorage.setItem("sidebar_pinned", String(nextPin));
   };
 
-  if (["/login", "/signup", "/forgot-password", "/update-password", "/privacy"].includes(pathname)) {
+  if (["/login", "/signup", "/forgot-password", "/privacy"].includes(pathname)) {
     return <>{children}</>;
   }
 
@@ -102,6 +102,15 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
     );
   }
 
+  const roleNavItems = [
+    { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard, roles: ["APPLICANT", "HOD", "ICT_OFFICER", "ADMIN"] },
+    { href: "/requests/new", labelKey: "newRequest", icon: FileText, roles: ["APPLICANT"] },
+    { href: "/requests", labelKey: profile?.role === "APPLICANT" ? "myRequests" : "allRequests", icon: ClipboardCheck, roles: ["APPLICANT", "HOD", "ICT_OFFICER", "ADMIN"] },
+    { href: "/users", labelKey: "userAccounts", icon: Users, roles: ["ADMIN"] },
+    { href: "/configuration", labelKey: "configuration", icon: Settings, roles: ["ADMIN"] },
+    { href: "/audit", labelKey: "auditLog", icon: ScrollText, roles: ["ADMIN"] },
+  ] as const;
+
   return (
     <div className="flex h-[100dvh] w-screen overflow-hidden bg-slate-50 text-slate-900 font-sans">
       <AppLoader />
@@ -109,9 +118,9 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
 
       {/* Main Column Container */}
       <div className="flex h-full w-full flex-col min-w-0">
-        {/* Top Header - Fixed & Static */}
+        {/* Top Header */}
         <header className="sticky top-0 z-30 flex h-[76px] shrink-0 items-center justify-between border-b border-slate-200/90 bg-white/95 px-4 backdrop-blur-md lg:px-8 shadow-xs">
-          {/* Top Bar Left: Mobile Hamburger & Logo/Title */}
+          {/* Left: Mobile Hamburger & Logo */}
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -137,75 +146,110 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
             </div>
           </div>
 
-          {/* Top Bar Middle (Mobile Screen format matching picture 3): Login as: Username */}
-          <div className="lg:hidden flex items-center text-xs font-medium text-slate-600">
-            <span>Login as:</span>
-            <span className="ml-1 font-bold text-brand-government truncate max-w-[120px]">
-              {profile?.fullName.split(" ")[0] ?? "Authorized"}
-            </span>
-          </div>
+          {/* Right: Notifications & User Profile Menu */}
+          <div className="flex items-center gap-3">
+            {profile && <NotificationBell />}
 
-          {/* Top Bar Right: User Dropdown Profile Icon */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              type="button"
-              onClick={() => setUserMenuOpen((prev) => !prev)}
-              className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-white p-1.5 pr-3 transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-95 shadow-xs"
-              aria-expanded={userMenuOpen}
-              aria-label="User account menu"
-            >
-              <div className="relative grid h-9 w-9 place-items-center rounded-full bg-brand-ink text-white shadow-xs">
-                <UserRound className="h-4 w-4" />
-                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" />
-              </div>
-              <div className="hidden text-left text-sm md:block">
-                <p className="font-semibold text-slate-900 leading-tight">{profile?.fullName ?? "Authorized User"}</p>
-                <p className="text-[11px] font-medium text-slate-500">{profile ? roleLabels[profile.role] : "User"}</p>
-              </div>
-            </button>
+            <div className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setUserMenuOpen((prev) => !prev)}
+                className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-white p-1.5 pr-3 transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-95 shadow-xs"
+                aria-expanded={userMenuOpen}
+                aria-label="User account menu"
+              >
+                <div className="relative grid h-9 w-9 place-items-center rounded-full bg-brand-ink text-white shadow-xs">
+                  <UserRound className="h-4 w-4" />
+                  <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" />
+                </div>
+                <div className="hidden text-left text-sm md:block">
+                  <p className="font-semibold text-slate-900 leading-tight">{profile?.fullName ?? "Authorized User"}</p>
+                  <p className="text-[11px] font-medium text-slate-500">{profile ? roleLabels[profile.role] : "User"}</p>
+                </div>
+              </button>
 
-            {/* Dropdown Popover */}
-            {userMenuOpen ? (
-              <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ring-1 ring-black/5 z-50 animate-in fade-in zoom-in-95 duration-150">
-                <div className="border-b border-slate-100 px-3 py-2.5">
-                  <p className="text-sm font-bold text-slate-900 truncate">{profile?.fullName ?? "Authorized User"}</p>
-                  <p className="mt-0.5 text-xs text-brand-government font-medium">{profile ? roleLabels[profile.role] : "User"}</p>
-                </div>
-                <div className="py-1">
-                  <Link
-                    href={"/update-password" as Route}
-                    onClick={() => setUserMenuOpen(false)}
-                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-brand-ink transition-colors"
+              {/* User Menu Dropdown */}
+              <AnimatePresence>
+                {userMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ring-1 ring-black/5 z-50 overflow-hidden"
                   >
-                    <KeyRound className="h-4 w-4 text-slate-500" />
-                    Change Password
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      setUserMenuOpen(false);
-                      await createClient().auth.signOut();
-                      router.replace("/login");
-                      router.refresh();
-                    }}
-                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 transition-colors"
-                  >
-                    <LogOut className="h-4 w-4 text-red-600" />
-                    Log Out
-                  </button>
-                </div>
-              </div>
-            ) : null}
+                    <div className="border-b border-slate-100 px-3 py-2.5">
+                      <p className="text-sm font-bold text-slate-900 truncate">{profile?.fullName ?? "Authorized User"}</p>
+                      <p className="mt-0.5 text-xs text-brand-government font-medium">{profile ? roleLabels[profile.role] : "User"}</p>
+                    </div>
+
+                    {/* Language Selector inside Menu */}
+                    <div className="border-b border-slate-100 p-2">
+                      <div className="mb-1.5 flex items-center gap-1.5 px-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                        <Globe className="h-3.5 w-3.5 text-slate-500" />
+                        {t("language")}
+                      </div>
+                      <div className="grid grid-cols-2 gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setLang("en")}
+                          className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                            lang === "en" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "text-slate-600 hover:bg-slate-100"
+                          }`}
+                        >
+                          <span>{t("english")}</span>
+                          {lang === "en" && <Check className="h-3.5 w-3.5 text-emerald-600" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLang("sw")}
+                          className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+                            lang === "sw" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "text-slate-600 hover:bg-slate-100"
+                          }`}
+                        >
+                          <span>{t("swahili")}</span>
+                          {lang === "sw" && <Check className="h-3.5 w-3.5 text-emerald-600" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="py-1">
+                      <Link
+                        href={"/update-password" as Route}
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-brand-ink transition-colors"
+                      >
+                        <KeyRound className="h-4 w-4 text-slate-500" />
+                        {t("changePassword")}
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setUserMenuOpen(false);
+                          await createClient().auth.signOut();
+                          router.replace("/login");
+                          router.refresh();
+                        }}
+                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut className="h-4 w-4 text-red-600" />
+                        {t("signOut")}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </header>
 
-        {/* Body Split: Fixed Sidebar + Scrollable Content */}
+        {/* Body Split: Desktop Sidebar & Main Content */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Desktop Left Sidebar (Static & Fixed) */}
-          <aside
-            className={`hidden lg:flex flex-col border-r border-slate-800 bg-brand-ink text-white transition-all duration-300 ease-out shrink-0 ${
-              isCollapsed && !isPinned ? "w-[72px]" : "w-[268px]"
-            }`}
+          {/* Desktop Left Sidebar */}
+          <motion.aside
+            animate={{ width: isCollapsed && !isPinned ? 72 : 268 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="hidden lg:flex flex-col border-r border-slate-800 bg-brand-ink text-white shrink-0 overflow-hidden"
           >
             <div className="flex items-center justify-between border-b border-white/15 px-4 py-4">
               {(!isCollapsed || isPinned) && (
@@ -215,7 +259,6 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
                 </div>
               )}
 
-              {/* Pin / Lock toggle button (Picture 5 circle button) */}
               <button
                 type="button"
                 onClick={togglePin}
@@ -224,18 +267,24 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
                     ? "border-brand-gold bg-brand-gold/20 text-brand-gold"
                     : "border-white/20 bg-white/5 hover:bg-white/10"
                 }`}
-                title={isPinned ? "Sidebar Locked (Click to unlock collapse)" : "Sidebar Unlocked (Click to pin)"}
+                title={isPinned ? "Sidebar Locked" : "Sidebar Unlocked"}
               >
                 <Target className="h-4 w-4" />
               </button>
             </div>
 
-            {/* Navigation links */}
+            {/* Navigation Links */}
             <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-              <DesktopNav pathname={pathname} profile={profile} isCollapsed={isCollapsed && !isPinned} />
+              <DesktopNav
+                navItems={roleNavItems}
+                pathname={pathname}
+                profile={profile}
+                isCollapsed={isCollapsed && !isPinned}
+                t={t}
+              />
             </div>
 
-            {/* Bottom Workspace Card & Logout */}
+            {/* Bottom Card & Logout */}
             <div className="border-t border-white/15 p-3">
               {(!isCollapsed || isPinned) && (
                 <div className="rounded-xl border border-white/10 bg-white/[0.05] p-3 mb-2">
@@ -243,7 +292,7 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
                     <img src="/branding/HalmashauriYaChalinze.png" alt="" className="h-4 w-4 object-contain" />
                     Audited Workspace
                   </div>
-                  <p className="mt-1 text-[11px] leading-4 text-white/60">Official Chalinze District Council Access</p>
+                  <p className="mt-1 text-[11px] leading-4 text-white/60">Chalinze District Council Access</p>
                 </div>
               )}
               <button
@@ -256,30 +305,27 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-white/70 hover:bg-white/10 hover:text-white transition-all active:scale-95 ${
                   isCollapsed && !isPinned ? "justify-center" : ""
                 }`}
-                title="Sign Out"
+                title={t("signOut")}
               >
                 <LogOut className="h-4 w-4 text-red-400 shrink-0" />
-                {(!isCollapsed || isPinned) && <span>Sign Out</span>}
+                {(!isCollapsed || isPinned) && <span>{t("signOut")}</span>}
               </button>
             </div>
-          </aside>
+          </motion.aside>
 
-          {/* Mobile Drawer (Matching Picture 2) */}
-          {mobileOpen ? (
+          {/* Mobile Drawer */}
+          {mobileOpen && (
             <div className="fixed inset-0 z-50 flex lg:hidden">
-              {/* Backdrop */}
               <div
                 className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
                 onClick={() => setMobileOpen(false)}
               />
-
-              {/* Drawer Container */}
               <div className="relative z-10 flex w-4/5 max-w-xs flex-col bg-white text-slate-900 shadow-2xl animate-in slide-in-from-left duration-200">
                 <div className="flex items-center justify-between border-b border-slate-100 p-4 bg-slate-50">
                   <div className="flex items-center gap-2.5">
                     <img src="/branding/HalmashauriYaChalinze.png" alt="" className="h-8 w-8 object-contain" />
                     <div>
-                      <p className="text-base font-bold leading-none text-brand-ink">SRMS</p>
+                      <p className="text-base font-bold leading-none text-brand-ink">UAMIS</p>
                       <p className="text-[10px] font-semibold text-slate-500 mt-1">Chalinze District Council</p>
                     </div>
                   </div>
@@ -293,7 +339,13 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-1">
-                  <MobileNav pathname={pathname} profile={profile} onNavigate={() => setMobileOpen(false)} />
+                  <MobileNav
+                    navItems={roleNavItems}
+                    pathname={pathname}
+                    profile={profile}
+                    onNavigate={() => setMobileOpen(false)}
+                    t={t}
+                  />
                 </div>
 
                 <div className="border-t border-slate-100 bg-slate-50 p-4">
@@ -312,27 +364,17 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 py-2.5 text-xs font-bold text-red-700 hover:bg-red-100 transition-colors"
                   >
                     <LogOut className="h-4 w-4" />
-                    Sign Out
+                    {t("signOut")}
                   </button>
                 </div>
               </div>
             </div>
-          ) : null}
+          )}
 
-          {/* Middle Scrollable Content Container */}
+          {/* Main Scrollable Content */}
           <div className="relative flex flex-1 flex-col overflow-y-auto min-w-0 bg-slate-50 justify-between">
-            {/* Draft grid pattern */}
-            <div
-              className="pointer-events-none fixed inset-0 z-0 opacity-[0.03]"
-              style={{
-                backgroundImage:
-                  "linear-gradient(rgba(0,0,0,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,1) 1px, transparent 1px)",
-                backgroundSize: "40px 40px",
-              }}
-            />
             <main className="relative z-10 space-y-6 p-4 sm:p-6 lg:p-8 xl:p-10">{children}</main>
 
-            {/* Footer - Always at Bottom */}
             <footer className="mt-auto border-t border-slate-200 bg-white py-4 px-6 text-center text-xs leading-relaxed text-slate-500 shadow-xs">
               Chalinze District Council User Access Management System &copy; 2026. Help desk: 0678049280 | ded@chalinzedc.go.tz
             </footer>
@@ -344,35 +386,63 @@ export function AppShell({ children, profile }: { children: ReactNode; profile: 
 }
 
 function DesktopNav({
+  navItems,
   pathname,
   profile,
-  isCollapsed
+  isCollapsed,
+  t
 }: {
+  navItems: any;
   pathname: string;
   profile: ShellProfile;
   isCollapsed: boolean;
+  t: (key: any) => string;
 }) {
+  const [hoveredHref, setHoveredHref] = useState<string | null>(null);
+
   return (
     <>
       {navItems
-        .filter((item) => profile && (item.roles as readonly string[]).includes(profile.role))
-        .map(({ href, label, icon: Icon }) => {
+        .filter((item: any) => profile && item.roles.includes(profile.role))
+        .map(({ href, labelKey, icon: Icon }: any) => {
           const active = isItemActive(href, pathname);
+          const label = t(labelKey);
 
           if (isCollapsed) {
             return (
-              <Link
+              <div
                 key={href}
-                href={href as Route}
-                title={label}
-                className={`flex h-11 w-full items-center justify-center rounded-xl transition-all duration-150 active:scale-95 ${
-                  active
-                    ? "bg-brand-government text-white shadow-md ring-2 ring-emerald-400/30"
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
-                }`}
+                className="relative group"
+                onMouseEnter={() => setHoveredHref(href)}
+                onMouseLeave={() => setHoveredHref(null)}
               >
-                <Icon className="h-5 w-5" />
-              </Link>
+                <Link
+                  href={href as Route}
+                  className={`flex h-11 w-full items-center justify-center rounded-xl transition-all duration-150 active:scale-95 ${
+                    active
+                      ? "bg-brand-government text-white shadow-md ring-2 ring-emerald-400/30"
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
+                </Link>
+
+                {/* Floating Hover Label Tooltip Overlay */}
+                <AnimatePresence>
+                  {hoveredHref === href && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -8 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute left-full top-1/2 -translate-y-1/2 ml-3 z-50 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white shadow-xl whitespace-nowrap border border-slate-700 pointer-events-none flex items-center gap-2"
+                    >
+                      <Icon className="h-3.5 w-3.5 text-brand-gold" />
+                      <span>{label}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             );
           }
 
@@ -403,20 +473,25 @@ function DesktopNav({
 }
 
 function MobileNav({
+  navItems,
   pathname,
   profile,
-  onNavigate
+  onNavigate,
+  t
 }: {
+  navItems: any;
   pathname: string;
   profile: ShellProfile;
   onNavigate: () => void;
+  t: (key: any) => string;
 }) {
   return (
     <>
       {navItems
-        .filter((item) => profile && (item.roles as readonly string[]).includes(profile.role))
-        .map(({ href, label, icon: Icon }) => {
+        .filter((item: any) => profile && item.roles.includes(profile.role))
+        .map(({ href, labelKey, icon: Icon }: any) => {
           const active = isItemActive(href, pathname);
+          const label = t(labelKey);
 
           return (
             <Link

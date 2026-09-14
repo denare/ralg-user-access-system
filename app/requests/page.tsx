@@ -8,14 +8,23 @@ export const dynamic = "force-dynamic";
 export default async function RequestsPage() {
   const profile = await requireProfile();
   const requests = await getVisibleRequests(profile);
+
+  const isApplicant = profile.role === "APPLICANT";
+  const title = isApplicant ? "My Requests" : "All Requests";
+  const eyebrow = isApplicant ? "Applicant Dashboard" : "Official Register";
+
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Request Register"
-        title="User Access Request Register"
-        description="Official register of submitted requests, their responsible officers, current status, and recorded processing dates."
+        eyebrow={eyebrow}
+        title={title}
+        description={
+          isApplicant
+            ? "View your submitted access requests, review status updates, and re-apply if a request is rejected."
+            : "Official register of submitted requests, responsible officers, status updates, and ICT processing actions."
+        }
       />
-      <RequestTable items={requests} />
+      <RequestTable items={requests} userRole={profile.role} />
     </div>
   );
 }

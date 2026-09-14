@@ -33,6 +33,14 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Your session has expired. Sign in again before downloading the report." }, { status: 401 });
     }
 
+    // RBAC: Only ICT_OFFICER and ADMIN are authorized to download official PDF reports
+    if (profile.role !== "ICT_OFFICER" && profile.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Access Denied. Only ICT Officers and System Administrators are authorized to download official PDF reports." },
+        { status: 403 }
+      );
+    }
+
     const { id } = await params;
     const report = await getRequestReportData(profile, id);
     if (!report) {
