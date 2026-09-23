@@ -63,7 +63,7 @@ async function runTests() {
   const adminCookie = await getAuthCookie("admin.demo@tamisemi.go.tz", process.env.SEED_ADMIN_PASSWORD);
   ok("Logged in as Applicant, HOD, ICT Officer, and Admin.");
 
-  // ── Test 1: NIN Validation (must reject non-20 digits) ──
+  // ── Test 1:   NIN Validation (must reject non-20 digits) ──
   console.log("\n[TEST 1] NIN 20-digit validation...");
   const invalidNinRes = await fetch(`${BASE_URL}/api/requests`, {
     method: "POST",

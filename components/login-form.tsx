@@ -45,7 +45,7 @@ export function LoginForm() {
     <form onSubmit={handleSubmit} className="mt-7 space-y-5">
       <div>
         <label htmlFor="email" className="mb-2 block text-sm font-semibold text-slate-800">
-          Government Email
+           Email
         </label>
         <div className="relative">
           <UserRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
@@ -56,7 +56,7 @@ export function LoginForm() {
             autoComplete="username"
             required
             className="field pl-10"
-            placeholder="Enter government email address"
+            placeholder="Enter email address"
           />
         </div>
       </div>
