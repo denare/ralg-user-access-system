@@ -19,7 +19,24 @@ export const getCurrentProfile = cache(async () => {
     return null;
   }
 
-  return withDatabaseRetry(() => prisma.user.findUnique({ where: { authUserId: data.user.id } }));
+  const profile = await withDatabaseRetry(() => prisma.user.findUnique({ where: { authUserId: data.user.id } }));
+  if (!profile) return null;
+
+  // Single active session enforcement: verify cookie session ID matches database
+  if (profile.activeSessionId) {
+    try {
+      const { cookies: getCookies } = await import("next/headers");
+      const cookieStore = await getCookies();
+      const sessionCookie = cookieStore.get("active_session_id")?.value;
+      if (sessionCookie && sessionCookie !== profile.activeSessionId) {
+        return null; // Session invalidated by login on another device
+      }
+    } catch {
+      // ignore header access outside request context
+    }
+  }
+
+  return profile;
 });
 
 export const getCurrentShellProfile = cache(async () => {

@@ -104,7 +104,7 @@ export async function POST(request: Request) {
           facility: data.facility,
           action: actions[data.action],
           environment: environments[data.environment],
-          checkNumber: data.checkNumber,
+          checkNumber: data.checkNumber || null,
           nin: data.nin,
           fullName: profile.fullName,
           designation: profile.designation ?? data.designation,
@@ -133,6 +133,30 @@ export async function POST(request: Request) {
         }
       })
     ]);
+
+    // Send notification to department HODs if request is submitted for review
+    if (data.mode !== "draft") {
+      try {
+        const hods = await prisma.user.findMany({
+          where: { role: "HOD", department: profile.department ?? data.department, isActive: true },
+          select: { id: true }
+        });
+        if (hods.length > 0) {
+          await prisma.notification.createMany({
+            data: hods.map((hod) => ({
+              userId: hod.id,
+              title: "New Access Request Pending Approval",
+              titleSw: "Ombi Jipya la Ufikiaji Linasubiri Idhini",
+              message: `${profile.fullName} submitted access request UAR-${new Date().getFullYear()} for ${data.systems.join(", ")}.`,
+              messageSw: `${profile.fullName} amewasilisha ombi la ufikiaji wa ${data.systems.join(", ")}.`,
+              link: `/requests/${created.id}`
+            }))
+          });
+        }
+      } catch (notifErr) {
+        console.error("Failed to dispatch HOD notification:", notifErr);
+      }
+    }
 
     return NextResponse.json({ id: created.id, requestNumber: created.requestNumber }, { status: 201 });
   } catch (error) {

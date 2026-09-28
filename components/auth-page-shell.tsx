@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { Mail, Phone, Instagram } from "lucide-react";
+import { Mail, Phone, Instagram, MessageCircle } from "lucide-react";
 import { ReactNode } from "react";
 
 export function AuthPageShell({
@@ -76,70 +76,40 @@ export function AuthPageShell({
               </p>
             </div>
 
-            {/* Steps */}
+            {/* Steps with Glassmorphism Border */}
             <div className="grid gap-3 xl:grid-cols-3">
               {[
                 ["01", "Submit", "Applicants submit complete access requests."],
                 ["02", "Authorize", "Department heads record formal decisions."],
                 ["03", "Process", "ICT officers provision and close requests."]
               ].map(([number, itemTitle, itemDescription]) => (
-                <div key={number} className="border-l-4 border-brand-gold bg-white/12 p-4 backdrop-blur-md">
-                  <p className="text-xs font-bold text-brand-gold">{number}</p>
+                <div key={number} className="rounded-xl border border-white/25 bg-white/12 p-4 shadow-xl backdrop-blur-md transition-all hover:bg-white/18 hover:border-white/40">
+                  <p className="text-xs font-black uppercase tracking-wider text-brand-gold">{number}</p>
                   <h3 className="mt-2 text-base font-bold text-white">{itemTitle}</h3>
-                  <p className="mt-2 text-xs leading-5 text-white/72">{itemDescription}</p>
+                  <p className="mt-2 text-xs leading-5 text-white/75">{itemDescription}</p>
                 </div>
               ))}
             </div>
 
-            {/* Help Desk Banner — redesigned */}
-            <div className="relative overflow-hidden rounded-xl border border-white/25 bg-white/10 p-5 shadow-2xl backdrop-blur-md">
-              {/* Accent top border */}
-              <div className="absolute inset-x-0 top-0 h-0.5 rounded-t-xl bg-gradient-to-r from-brand-gold via-white/60 to-brand-gold" />
-
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-brand-gold">
-                    🛟 &nbsp;Help Desk &amp; Support
-                  </p>
-                  <p className="mt-1 text-xs text-white/60">
-                    ICT Department — Chalinze District Council
-                  </p>
+            {/* Direct WhatsApp Chat Icon Action */}
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-emerald-400/30 bg-emerald-950/40 p-4 shadow-2xl backdrop-blur-md">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 ring-2 ring-emerald-400/40">
+                  <MessageCircle className="h-6 w-6" />
                 </div>
-                <span className="shrink-0 rounded-full bg-brand-gold/20 px-2.5 py-1 text-[10px] font-bold text-brand-gold ring-1 ring-brand-gold/40">
-                  Mon – Fri, 08:00–16:00
-                </span>
+                <div>
+                  <p className="text-xs font-bold text-emerald-300 uppercase tracking-wider">Direct ICT Support</p>
+                  <p className="text-sm font-semibold text-white">Chat on WhatsApp</p>
+                </div>
               </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                {/* Phone */}
-                <a
-                  href="tel:0678049280"
-                  className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-white/20 hover:border-white/40 active:scale-95"
-                >
-                  <Phone className="h-4 w-4 shrink-0 text-brand-gold" />
-                  <span>0678049280</span>
-                </a>
-
-                {/* Email */}
-                <a
-                  href="mailto:ded@chalinzedc.go.tz"
-                  className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-white/20 hover:border-white/40 active:scale-95"
-                >
-                  <Mail className="h-4 w-4 shrink-0 text-brand-gold" />
-                  <span>ded@chalinzedc.go.tz</span>
-                </a>
-
-                {/* Instagram */}
-                <a
-                  href="https://www.instagram.com/chalinze_district_council/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-white/20 hover:border-white/40 active:scale-95"
-                >
-                  <Instagram className="h-4 w-4 shrink-0 text-brand-gold" />
-                  <span>@chalinze_district_council</span>
-                </a>
-              </div>
+              <a
+                href="https://wa.me/255678049280"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg transition hover:bg-emerald-500 active:scale-95"
+              >
+                <span>Chat Now</span>
+              </a>
             </div>
           </div>
         </section>

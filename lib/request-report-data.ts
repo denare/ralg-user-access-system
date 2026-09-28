@@ -70,7 +70,7 @@ export type RequestReportData = {
     completedAt: Date | null;
     requester: {
       fullName: string;
-      checkNumber: string;
+      checkNumber: string | null;
       nin: string;
       department: string;
       designation: string;

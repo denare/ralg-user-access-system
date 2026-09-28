@@ -196,11 +196,11 @@ export default async function RequestDetailPage({
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
+function Detail({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5">
       <dt className="text-xs font-semibold text-slate-500">{label}</dt>
-      <dd className="mt-1 text-sm font-medium text-slate-900">{value}</dd>
+      <dd className="mt-1 text-sm font-medium text-slate-900">{value || "N/A"}</dd>
     </div>
   );
 }

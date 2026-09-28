@@ -6,6 +6,11 @@ import { AuthPageShell } from "@/components/auth-page-shell";
 import { LoginForm } from "@/components/login-form";
 import { getCurrentShellProfile } from "@/lib/auth";
 
+export const metadata = {
+  title: "Login | e-vibali",
+  description: "Mfumo wa Vibali vya TEHAMA - Halmashauri ya Wilaya ya Chalinze"
+};
+
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ password?: string; error?: string }> }) {
   const profile = await getCurrentShellProfile();
   if (profile) redirect("/dashboard");

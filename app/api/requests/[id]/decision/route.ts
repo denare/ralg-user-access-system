@@ -126,7 +126,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           titleSw: notifTitleSw,
           message: notifMsgEn,
           messageSw: notifMsgSw,
-          link: `/requests`
+          link: `/requests/${item.id}`
         }
       }),
       prisma.auditLog.create({
