@@ -80,6 +80,6 @@ export default async function ReportsPage() {
   );
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
-  return <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt><dd className="mt-1 text-sm text-slate-800">{value}</dd></div>;
+function Detail({ label, value }: { label: string; value?: string | null }) {
+  return <div><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt><dd className="mt-1 text-sm text-slate-800">{value || "N/A"}</dd></div>;
 }

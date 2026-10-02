@@ -57,6 +57,8 @@ model User {
   approvals      Approval[]
   notifications  Notification[]
   auditLogs      AuditLog[]
+  isEmployee     Boolean         @default(true)
+  activeSessionId String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
@@ -123,7 +125,7 @@ model AccessRequest {
   facility            String
   action              RequestAction
   environment         OperatingEnvironment
-  checkNumber         String
+  checkNumber         String?
   nin                 String
   fullName            String
   designation         String

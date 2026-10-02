@@ -269,7 +269,7 @@ export function RequestForm({
           <Field label="Check Number" error={fieldErrors.checkNumber?.[0]}>
             <input className={fieldClass("checkNumber")} value={form.checkNumber} onChange={(e) => updateForm("checkNumber", e.target.value)} aria-invalid={Boolean(fieldErrors.checkNumber)} />
           </Field>
-          <Field label="NIN (National ID Number - 20 Digits)" error={fieldErrors.nin?.[0]}>
+          <Field label="NIDA" error={fieldErrors.nin?.[0]}>
             <input className={fieldClass("nin")} placeholder="20012906-61315-00001-26" value={form.nin} onChange={(e) => updateForm("nin", formatNinDisplay(e.target.value))} aria-invalid={Boolean(fieldErrors.nin)} />
           </Field>
           <Field label="Full Name" error={fieldErrors.fullName?.[0]}>

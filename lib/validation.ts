@@ -7,7 +7,8 @@ export const requestSchema = z.object({
   facility: z.string().min(2).max(160),
   action: z.enum(["Create User", "Modify User", "Block User", "Reset Password"]),
   environment: z.enum(["Production", "Testing"]),
-  checkNumber: z.string().min(2).max(40),
+  isEmployee: z.boolean().default(true),
+  checkNumber: z.string().max(40).optional(),
   nin: z.string().transform((val) => val.replace(/\D/g, "")).refine((val) => /^\d{20}$/.test(val), {
     message: "NIN must contain exactly 20 numeric digits."
   }),
@@ -36,6 +37,11 @@ export const requestSchema = z.object({
   const validLgas = lgasByRegion[data.region as Region] as readonly string[];
   if (!validLgas.includes(data.lga)) {
     context.addIssue({ code: "custom", path: ["lga"], message: "Select an LGA that belongs to the selected region." });
+  }
+
+  // Validate checkNumber if employee is true
+  if (data.isEmployee && (!data.checkNumber || !data.checkNumber.trim())) {
+    context.addIssue({ code: "custom", path: ["checkNumber"], message: "Check number is required for government employees." });
   }
 
   // Validate otherSystem when 'Other' is included in systems list

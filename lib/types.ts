@@ -42,7 +42,7 @@ export type AccessRequest = {
   phone: string;
   action: RequestAction;
   environment: OperatingEnvironment;
-  checkNumber: string;
+  checkNumber: string | null;
   nin: string;
   systems: string[];
   requestedRole: string;

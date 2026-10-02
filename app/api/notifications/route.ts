@@ -34,3 +34,16 @@ export async function POST() {
 
   return NextResponse.json({ success: true });
 }
+
+export async function DELETE() {
+  const profile = await getCurrentProfile();
+  if (!profile) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  await prisma.notification.deleteMany({
+    where: { userId: profile.id }
+  });
+
+  return NextResponse.json({ success: true });
+}
