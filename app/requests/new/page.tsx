@@ -11,7 +11,19 @@ export default async function NewRequestPage({
   searchParams?: Promise<{ reapply?: string }>;
 }) {
   const profile = await requireProfile(["APPLICANT"]);
-  const systems = await prisma.systemCatalog.findMany({ where: { isActive: true }, orderBy: { name: "asc" } });
+  
+  let systems: { name: string }[] = [];
+  try {
+    systems = await prisma.systemCatalog.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" }
+    });
+  } catch (err) {
+    console.error("Failed to fetch system catalog:", err);
+  }
+
+  const defaultSystems = ["FFARS", "eOffice", "Lawson", "PlanRep", "GoT-HoMIS", "Epicor", "HCMIS"];
+  const systemNames = systems.length > 0 ? systems.map(({ name }) => name) : defaultSystems;
 
   const resolvedParams = searchParams ? await searchParams : {};
   const reapplyId = resolvedParams.reapply;
@@ -60,7 +72,7 @@ export default async function NewRequestPage({
       />
       <RequestForm
         profile={profile}
-        systems={systems.map(({ name }) => name)}
+        systems={systemNames}
         initialData={initialData}
       />
     </div>
